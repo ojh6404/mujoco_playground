@@ -89,6 +89,8 @@ Locomotion and manipulation XMLs include robot models from `mujoco_menagerie`. I
 
 The reBot B601-DM envs (`manipulation/rebot_b601_dm/`) clone their meshes the same way from `Rebot_Arm_description` into `external_deps/`, pinned in `base.py`; `REBOT_ARM_DESCRIPTION_PATH` points at an existing checkout instead.
 
+The i2rt YAM envs (`manipulation/i2rt_yam/`) subclass the reBot task classes (`base.YamMixin` swaps joint names and assets, `SCENE_XML` the scene) and read their meshes from the menagerie `i2rt_yam` model; scenes and keyframes mirror the reBot ones.
+
 The A0B + Shadow Hand env (`manipulation/a0b_shadow_hand/`) reads meshes from a local checkout of the private `a0bsrh_model` package (`A0BSRH_MODEL_PATH`, default `~/robot/shadowhand_ws/a0bsrh_model`); its MJCF is a generated, MJX-adapted copy of that package's XML (see its README).
 
 ### MuJoCo Warp import

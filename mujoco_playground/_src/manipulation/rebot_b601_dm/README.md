@@ -12,6 +12,9 @@ Pick-cube tasks for the reBot Arm B601-DM (Damiao motor edition), mirroring the
 | `RebotDmStackCubeCartesian` | Same, with Cartesian (y, z, gripper) actions and both cubes on the gripper's plane. | State, or pixels with `vision=True` |
 | `RebotDmPickCubeReal` | Lift a 5 cm cube in the calibrated real setup of rebot_serl, with (x, y, z, yaw, gripper) actions at 10 Hz, the real controller gains and image augmentation. | State, or pixels from the calibrated left D435i with `vision=True` |
 
+The same tasks run on the i2rt YAM in `../i2rt_yam` (see its README for a
+comparison of the two arms).
+
 ```sh
 train-jax-ppo --env_name RebotDmPickCube --impl warp
 train-jax-ppo --env_name RebotDmPickCubeCartesian --impl warp --vision

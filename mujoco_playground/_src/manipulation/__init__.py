@@ -30,6 +30,10 @@ from mujoco_playground._src.manipulation.franka_emika_panda_robotiq import push_
 from mujoco_playground._src.manipulation.leap_hand import reorient as leap_cube_reorient
 from mujoco_playground._src.manipulation.leap_hand import rotate_z as leap_rotate_z
 from mujoco_playground._src.manipulation.aero_hand import rotate_z as aero_hand_rotate_z
+from mujoco_playground._src.manipulation.i2rt_yam import pick as yam_pick
+from mujoco_playground._src.manipulation.i2rt_yam import pick_cartesian as yam_pick_cartesian
+from mujoco_playground._src.manipulation.i2rt_yam import stack as yam_stack
+from mujoco_playground._src.manipulation.i2rt_yam import stack_cartesian as yam_stack_cartesian
 from mujoco_playground._src.manipulation.rebot_b601_dm import pick as rebot_dm_pick
 from mujoco_playground._src.manipulation.rebot_b601_dm import pick_cartesian as rebot_dm_pick_cartesian
 from mujoco_playground._src.manipulation.rebot_b601_dm import pick_real as rebot_dm_pick_real
@@ -57,6 +61,11 @@ _envs = {
     "RebotDmStackCubeCartesian": (
         rebot_dm_stack_cartesian.RebotDmStackCubeCartesian
     ),
+    "YamPickCube": yam_pick.YamPickCube,
+    "YamPickCubeOrientation": yam_pick.YamPickCubeOrientation,
+    "YamPickCubeCartesian": yam_pick_cartesian.YamPickCubeCartesian,
+    "YamStackCube": yam_stack.YamStackCube,
+    "YamStackCubeCartesian": yam_stack_cartesian.YamStackCubeCartesian,
 }
 
 _cfgs = {
@@ -76,6 +85,11 @@ _cfgs = {
     "RebotDmPickCubeReal": rebot_dm_pick_real.default_config,
     "RebotDmStackCube": rebot_dm_stack.default_config,
     "RebotDmStackCubeCartesian": rebot_dm_stack_cartesian.default_config,
+    "YamPickCube": yam_pick.default_config,
+    "YamPickCubeOrientation": yam_pick.default_config,
+    "YamPickCubeCartesian": yam_pick_cartesian.default_config,
+    "YamStackCube": yam_stack.default_config,
+    "YamStackCubeCartesian": yam_stack_cartesian.default_config,
 }
 
 _randomizer = {

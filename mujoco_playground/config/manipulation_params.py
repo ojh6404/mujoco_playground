@@ -82,6 +82,7 @@ def brax_ppo_config(
       "PandaPickCubeCartesian",
       "RebotDmPickCubeCartesian",
       "RebotDmPickCubeReal",
+      "YamPickCubeCartesian",
   ):
     rl_config.num_timesteps = 5_000_000
     rl_config.num_evals = 5
@@ -97,7 +98,7 @@ def brax_ppo_config(
     rl_config.network_factory.policy_hidden_layer_sizes = (256, 256)
     rl_config.num_resets_per_eval = 1
     rl_config.max_grad_norm = 1.0
-  elif env_name.startswith(("PandaPickCube", "RebotDmPickCube")):
+  elif env_name.startswith(("PandaPickCube", "RebotDmPickCube", "YamPickCube")):
     rl_config.num_timesteps = 20_000_000
     rl_config.num_evals = 4
     rl_config.unroll_length = 10
@@ -109,7 +110,12 @@ def brax_ppo_config(
     rl_config.num_envs = 2048
     rl_config.batch_size = 512
     rl_config.network_factory.policy_hidden_layer_sizes = (32, 32, 32, 32)
-  elif env_name in ("RebotDmStackCube", "RebotDmStackCubeCartesian"):
+  elif env_name in (
+      "RebotDmStackCube",
+      "RebotDmStackCubeCartesian",
+      "YamStackCube",
+      "YamStackCubeCartesian",
+  ):
     rl_config.num_timesteps = 60_000_000
     rl_config.num_evals = 6
     rl_config.unroll_length = 10
@@ -236,7 +242,7 @@ def brax_vision_ppo_config(
       num_resets_per_eval=1,
   )
 
-  if env_name == "RebotDmStackCubeCartesian":
+  if env_name in ("RebotDmStackCubeCartesian", "YamStackCubeCartesian"):
     rl_config.num_timesteps = 20_000_000
     rl_config.num_evals = 11
     rl_config.reward_scaling = 0.1
@@ -246,7 +252,11 @@ def brax_vision_ppo_config(
     # Proprioception next to the pixels; the critic also sees the cube.
     rl_config.network_factory.policy_obs_key = "state"
     rl_config.network_factory.value_obs_key = "privileged_state"
-  elif env_name not in ("PandaPickCubeCartesian", "RebotDmPickCubeCartesian"):
+  elif env_name not in (
+      "PandaPickCubeCartesian",
+      "RebotDmPickCubeCartesian",
+      "YamPickCubeCartesian",
+  ):
     raise NotImplementedError(f"Vision PPO params not tested for {env_name}")
 
   return rl_config
