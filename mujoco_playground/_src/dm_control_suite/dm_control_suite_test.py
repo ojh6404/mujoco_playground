@@ -38,8 +38,9 @@ class TestSuite(parameterized.TestCase):
     self.assertFalse(jp.isnan(state.data.qpos).any())
 
   def test_warn_overflow_filtered_warp(self) -> None:
-    import mujoco_warp as mjw  # pylint: disable=g-import-not-at-top
+    from mujoco_playground._src import mjx_env  # pylint: disable=g-import-not-at-top
 
+    mjw = mjx_env.import_mujoco_warp()
     env = dm_control_suite.load(
         "CartpoleBalance", config_overrides={"impl": "warp"}
     )
@@ -49,9 +50,9 @@ class TestSuite(parameterized.TestCase):
 
   def test_put_model_warn_overflow_filtered_warp(self) -> None:
     import mujoco  # pylint: disable=g-import-not-at-top
-    import mujoco_warp as mjw  # pylint: disable=g-import-not-at-top
     from mujoco_playground._src import mjx_env  # pylint: disable=g-import-not-at-top
 
+    mjw = mjx_env.import_mujoco_warp()
     mj_model = mujoco.MjModel.from_xml_string("<mujoco><worldbody/></mujoco>")
     mjx_model = mjx_env.put_model(mj_model, impl="warp")
     warn_overflow = int(mjx_model.opt._impl.warn_overflow)

@@ -127,6 +127,16 @@ def update_assets(
     elif f.is_dir() and recursive:
       update_assets(assets, f, glob, recursive)
 
+
+def import_mujoco_warp() -> Any:
+  """Imports MuJoCo Warp, falling back to the copy vendored in mujoco-mjx."""
+  try:
+    import mujoco_warp  # pylint: disable=g-import-not-at-top
+  except ImportError:
+    from mujoco.mjx.third_party import mujoco_warp  # pylint: disable=g-import-not-at-top
+  return mujoco_warp
+
+
 def put_model(
     model: mujoco.MjModel,
     device: Optional[jax.Device] = None,
@@ -138,7 +148,7 @@ def put_model(
   if impl in (mjx.Impl.WARP, "warp"):
     warn_overflow = getattr(mjx_model.opt._impl, "warn_overflow", None)
     if isinstance(warn_overflow, int):
-      import mujoco_warp as mjw  # pylint: disable=g-import-not-at-top
+      mjw = import_mujoco_warp()
 
       # Disable solver and linesearch iteration overflow warnings, as MJX
       # environments intentionally set them low for historical reasons
