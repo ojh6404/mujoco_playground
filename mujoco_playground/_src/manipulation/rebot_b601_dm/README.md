@@ -243,3 +243,25 @@ existing checkout instead, set `REBOT_ARM_DESCRIPTION_PATH`.
 `Rebot_Arm_description` has no license file. The reBot Arm MuJoCo project it
 comes from is licensed under CERN-OHL-W v2, so check the upstream terms before
 redistributing the meshes.
+
+### Results of `RebotDmPickCubeReal`
+
+Vision PPO, 20M steps, real controller gains, 100 mm gripper, start pose
+0.19 m, augmentation on; evaluated on 128 episodes with all randomization
+on ("sim eval"), and with the real-robot inference path in simulation
+(`logs/rebot_real/dress_rehearsal.py`: MuJoCo's own renderer at 640 × 480
+resized to 96 × 72, nominal camera, `rebot_real_policy`; 10 episodes):
+
+| `vision_mode` | Sim eval success at 20M (best) | Dress rehearsal | Batch |
+| --- | --- | --- | --- |
+| `rgb` | 51% (62%) | 9/10 | 1024 envs, 8 × 256 |
+| `depth` | 60% (64%) | 4/10 | 1024 envs, 8 × 256 |
+| `rgbd` | 46% (46%) | 3/10 | 512 envs, 8 × 128 (the 4-channel observations run 1024 envs out of GPU memory) |
+
+What mattered, in order: proprioception next to the pixels (without it the
+gripper output flipped sign every frame and success plateaued at 25%), the
+grasp bonus with the low guide state, and the 100 mm opening. RGB transfers
+best across renderers; the depth policies lose more between the Warp and
+the MuJoCo renderer (both give z-depth, so the cause is not identified) and
+real D435 depth is noisier still, so start the robot trials with the RGB
+policy.
