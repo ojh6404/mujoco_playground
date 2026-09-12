@@ -32,6 +32,7 @@ from mujoco_playground._src.manipulation.leap_hand import rotate_z as leap_rotat
 from mujoco_playground._src.manipulation.aero_hand import rotate_z as aero_hand_rotate_z
 from mujoco_playground._src.manipulation.rebot_b601_dm import pick as rebot_dm_pick
 from mujoco_playground._src.manipulation.rebot_b601_dm import pick_cartesian as rebot_dm_pick_cartesian
+from mujoco_playground._src.manipulation.rebot_b601_dm import pick_real as rebot_dm_pick_real
 from mujoco_playground._src.manipulation.rebot_b601_dm import stack as rebot_dm_stack
 from mujoco_playground._src.manipulation.rebot_b601_dm import stack_cartesian as rebot_dm_stack_cartesian
 
@@ -51,6 +52,7 @@ _envs = {
     "RebotDmPickCubeCartesian": (
         rebot_dm_pick_cartesian.RebotDmPickCubeCartesian
     ),
+    "RebotDmPickCubeReal": rebot_dm_pick_real.RebotDmPickCubeReal,
     "RebotDmStackCube": rebot_dm_stack.RebotDmStackCube,
     "RebotDmStackCubeCartesian": (
         rebot_dm_stack_cartesian.RebotDmStackCubeCartesian
@@ -71,6 +73,7 @@ _cfgs = {
     "RebotDmPickCube": rebot_dm_pick.default_config,
     "RebotDmPickCubeOrientation": rebot_dm_pick.default_config,
     "RebotDmPickCubeCartesian": rebot_dm_pick_cartesian.default_config,
+    "RebotDmPickCubeReal": rebot_dm_pick_real.default_config,
     "RebotDmStackCube": rebot_dm_stack.default_config,
     "RebotDmStackCubeCartesian": rebot_dm_stack_cartesian.default_config,
 }

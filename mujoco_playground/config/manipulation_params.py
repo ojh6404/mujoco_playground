@@ -78,7 +78,11 @@ def brax_ppo_config(
     rl_config.num_envs = 2048
     rl_config.batch_size = 512
     rl_config.network_factory.policy_hidden_layer_sizes = (32, 32, 32, 32)
-  elif env_name in ("PandaPickCubeCartesian", "RebotDmPickCubeCartesian"):
+  elif env_name in (
+      "PandaPickCubeCartesian",
+      "RebotDmPickCubeCartesian",
+      "RebotDmPickCubeReal",
+  ):
     rl_config.num_timesteps = 5_000_000
     rl_config.num_evals = 5
     rl_config.unroll_length = 10
@@ -236,6 +240,9 @@ def brax_vision_ppo_config(
     rl_config.num_timesteps = 20_000_000
     rl_config.num_evals = 11
     rl_config.reward_scaling = 0.1
+  elif env_name == "RebotDmPickCubeReal":
+    rl_config.num_timesteps = 20_000_000
+    rl_config.num_evals = 11
   elif env_name not in ("PandaPickCubeCartesian", "RebotDmPickCubeCartesian"):
     raise NotImplementedError(f"Vision PPO params not tested for {env_name}")
 

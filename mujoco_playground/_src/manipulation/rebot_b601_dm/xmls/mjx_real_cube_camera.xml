@@ -1,0 +1,74 @@
+<mujoco model="rebot_b601_dm real cube camera">
+  <include file="rebot_b601_dm.xml"/>
+  <!--
+    The calibrated real setup of rebot_serl (calibration of 2026-09-11): the
+    robot base frame is the world frame, the table top (white) is 13.4 mm
+    above it, and the camera is the D435i on the robot's left (cam_b, serial
+    021222071805) at its calibrated pose with the SDK intrinsics
+    (fx 614.6, fy 614.7 at 640x480, i.e. a vertical FOV of 42.66 deg; the
+    principal point is within 3 px of the image center and is ignored).
+    The cube is 5 cm. The 'ready' keyframe is a top-down pose like the READY_Q
+    reset pose of rebot_serl but higher: grasp site 0.19 m above the base
+    (TCP 0.20 m) at x = 0.30 m, the highest top-down pose joint4 allows with
+    some margin.
+  -->
+  <statistic center="0.3 0 0.15" extent="0.7"/>
+
+  <option timestep="0.005" iterations="5" ls_iterations="8" integrator="implicitfast">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <custom>
+    <numeric data="12" name="max_contact_points"/>
+  </custom>
+
+  <visual>
+    <headlight diffuse="0.6 0.6 0.6" ambient="0.4 0.4 0.4" specular="0 0 0"/>
+    <global azimuth="120" elevation="-20"/>
+    <scale contactwidth="0.075" contactheight="0.025" forcewidth="0.05" com="0.05" framewidth="0.01" framelength="0.2"/>
+  </visual>
+
+  <asset>
+    <texture type="skybox" builtin="flat" rgb1="0.55 0.55 0.55" rgb2="0.55 0.55 0.55" width="32" height="32"/>
+  </asset>
+
+  <worldbody>
+    <!-- Lights as in the rebot_serl real2sim scene. -->
+    <light name="key" pos="0.3 -0.6 1.4" dir="0 0.371 -0.928" directional="true" diffuse="0.7 0.7 0.7"/>
+    <light name="fill" pos="0.6 0.8 1.2" dir="-0.3 -0.6 -0.75" directional="true" diffuse="0.35 0.35 0.35" castshadow="false"/>
+    <camera name="cam_b" fovy="42.66" pos="0.376277 0.55949 0.463839" quat="-0.00404839 -0.03624 0.413899 0.909592"/>
+    <!-- Marker of cam_b for overview renders (group 3 is not rendered into pixels). -->
+    <body name="cam_b_marker" pos="0.376277 0.55949 0.463839" quat="-0.00404839 -0.03624 0.413899 0.909592">
+      <geom type="box" size="0.045 0.0125 0.0125" rgba="0.2 0.2 0.2 1" contype="0" conaffinity="0" group="3"/>
+      <geom type="cylinder" size="0.008 0.012" pos="0 0 -0.02" rgba="0.1 0.1 0.1 1" contype="0" conaffinity="0" group="3"/>
+    </body>
+    <!-- The table of the real2sim scene of rebot_serl (1.33 x 1.10 m, top 13.4 mm
+         above the robot base) over the room floor. The Warp renderer draws a
+         plane as a finite quad, so the table is a box and the sky shows where
+         the real room would. -->
+    <geom name="floor" type="box" size="0.665367 0.55 0.02" pos="0.315367 0.00685915 -0.00656968" rgba="1 1 1 1" contype="1"/>
+    <geom name="ground" type="plane" size="0 0 0.1" pos="0 0 -0.75" rgba="0.35 0.36 0.38 1" contype="1"/>
+    <body name="box" pos="0.30 0 0.03843">
+      <freejoint/>
+      <geom type="box" name="box" size="0.025 0.025 0.025" condim="3" mass="0.05"
+       friction="1 .03 .003" rgba="1 0.1 0.1 1" solref="0.01 1"/>
+    </body>
+    <body mocap="true" name="mocap_target">
+      <!-- Group 3 is not rendered, so the target never shows up in pixels. -->
+      <geom type="box" size="0.025 0.025 0.025" rgba="1 0 0 0.2" contype="0" conaffinity="0" group="3"/>
+    </body>
+  </worldbody>
+
+  <include file="sensor.xml"/>
+
+  <keyframe>
+    <!-- Gripper pointing down with the grasp site at (0.30, 0, 0.19); the env opens the fingers to gripper_travel. -->
+    <key name="ready"
+      qpos="0 -1.7095 -1.6319 1.4934 0 0 0.05 -0.05 0.30 0 0.03843 1 0 0 0"
+      ctrl="0 -1.7095 -1.6319 1.4934 0 0 0.05"/>
+    <!-- Cube held at the ready gripper position. -->
+    <key name="picked"
+      qpos="0 -1.7095 -1.6319 1.4934 0 0 0.025 -0.025 0.30 0 0.19 1 0 0 0"
+      ctrl="0 -1.7095 -1.6319 1.4934 0 0 0"/>
+  </keyframe>
+</mujoco>

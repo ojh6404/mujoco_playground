@@ -10,6 +10,7 @@ Pick-cube tasks for the reBot Arm B601-DM (Damiao motor edition), mirroring the
 | `RebotDmPickCubeCartesian` | Lift the box to a fixed height with Cartesian (y, z, gripper) actions. | State, or pixels with `vision=True` |
 | `RebotDmStackCube` | Pick up a blue 4 cm cube and place it on top of a red one, then let go. | State |
 | `RebotDmStackCubeCartesian` | Same, with Cartesian (y, z, gripper) actions and both cubes on the gripper's plane. | State, or pixels with `vision=True` |
+| `RebotDmPickCubeReal` | Lift a 5 cm cube in the calibrated real setup of rebot_serl, with (x, y, z, yaw, gripper) actions at 10 Hz, the real controller gains and image augmentation. | State, or pixels from the calibrated left D435i with `vision=True` |
 
 ```sh
 train-jax-ppo --env_name RebotDmPickCube --impl warp
@@ -94,6 +95,69 @@ end on success, and `guide_prob` of the episodes start from the `picked`
 keyframe with the blue cube already grasped. With the plain per-step reward of
 `RebotDmStackCube`, a vision policy only learned to park the gripper next to
 the blue cube. `vision_mode` works the same way as for the pick task.
+
+### Sim-to-real pick (`RebotDmPickCubeReal`)
+
+`pick_real.py` and `xmls/mjx_real_cube_camera.xml` reproduce the calibrated
+setup of `~/robot/rebot_ws/rebot_serl` (calibration of 2026-09-11):
+
+- The robot base frame is the world frame and the table (the real2sim table
+  box, 1.33 × 1.10 m, top 13.4 mm above the base) is white over a grey room
+  floor. The cube is 5 cm.
+- The camera is `cam_b`, the D435i on the robot's left (serial 021222071805),
+  at its calibrated pose with the SDK intrinsics (vertical FOV 42.66°,
+  principal point within 3 px of the centre). The policy sees 96 × 72 pixels
+  (4:3 like the 640 × 480 colour stream), rendered at 192 × 144 and
+  average-pooled, because the Warp renderer casts one ray per pixel and a
+  direct low-resolution render is aliased in a way a resized camera image is
+  not (a policy trained on direct renders picked the cube in only 3 of 10
+  episodes when fed images from MuJoCo's own renderer instead). On the
+  robot, resize the colour image to 96 × 72 and scale to [0, 1].
+- The episode starts with the gripper pointing down 0.19 m above the base
+  (TCP 0.20 m, about 19 cm above the table) at x = 0.30 m, joints
+  (0, −1.7095, −1.6319, 1.4934, 0, 0), with the fingers fully open. This is
+  the `READY_Q` pose of rebot_serl raised by 5 cm, close to the highest
+  top-down pose joint4 allows; use these joint angles as the reset pose on
+  the robot. `gripper_travel` sets the opening: 0.05 m per finger (100 mm, the
+  URDF value) by default; rebot_serl measured 28.5 mm per finger between the
+  motor hard stops, which leaves only 3.5 mm per side around the cube and
+  makes the grasp a sub-pixel alignment problem at 96 × 72 (RGB reached 27%
+  and depth 44% success at 20M steps with that opening). Set it to the real
+  opening before training for the robot.
+- Actions, applied at 10 Hz: translation of the grasp-site target by up to
+  1 cm per step along x, y, z, yaw about the vertical by up to 0.1 rad per
+  step (the compliance clips of rebot_serl), and open/close (a < 0 closes).
+  The target is clipped to `tip_x_range` × `tip_y_range` × `tip_z_range`
+  and `yaw_range`; the arm joints follow through the same IK as the other
+  Cartesian tasks. On the robot, apply the same increments to the TCP target
+  of `RobotServer.set_target_pose` (the grasp site is 10 mm above the pinch
+  point TCP along the approach axis, which does not matter for increments).
+- Low-level control follows `config/controller.yaml` of rebot_serl
+  (`actuation`): the arm joints use the MIT-mode PD gains of its compliance
+  profile (kp 60/60/60/10/10/8, kd 4/4/4/1.2/1/0.8), the PD torque is bounded
+  at kp × the reference lead it allows (9 Nm on joints 1–3, 3 Nm on 4–6;
+  gravity is compensated separately, as on the robot), and the joint targets
+  pass through the 50 ms first-order filter of its 500 Hz loop. The gripper
+  speed and travel are the real ones; its force is bounded at 20 N rather
+  than the 92 N stall force of the real motor, which would sink the pads
+  into the soft-contact cube. With these gains the gripper lags a 1 cm step
+  by 7–10 mm for a few steps, which the policy has to account for.
+- The cube spawns at x 0.24–0.38 m, y ±0.12 m with a yaw of ±45°; the task
+  is to lift it to 0.15 m (`target_height`, success within 5 cm in height).
+- Every episode draws a cube colour (yellow, light green, purple or red with
+  ±0.08 jitter), a table shade (0.85–1.0), a room-floor shade, a camera pose
+  offset (±1 cm, ≤2°), a brightness factor (0.7–1.3), a gain per colour
+  channel (±0.1), a blend with a 3 × 3 box blur and a pixel-noise level (up
+  to 0.03). The colours and the camera pose are applied through per-world
+  model fields at render time, so they work under the cached auto-reset of
+  the training wrapper.
+- `learning/rebot_real_policy.py` runs a trained checkpoint on camera images
+  without a simulator and returns the target increments and the gripper
+  command for `RobotServer`.
+
+```sh
+train-jax-ppo --env_name RebotDmPickCubeReal --impl warp --vision --use_tb --eval_video_envs 2 --render_camera cam_b
+```
 
 ### RGB, depth and RGB-D
 
