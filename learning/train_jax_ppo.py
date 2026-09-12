@@ -14,11 +14,24 @@
 
 """Train a PPO agent using JAX on the specified environment."""
 
+import os
+
+# These must be set before importing mujoco and jax: mujoco picks its GL
+# backend when it is imported and XLA reads XLA_FLAGS when it starts.
+xla_flags = os.environ.get("XLA_FLAGS", "")
+xla_flags += " --xla_gpu_triton_gemm_any=True"
+os.environ["XLA_FLAGS"] = xla_flags
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+os.environ["MUJOCO_GL"] = "egl"
+
+# pylint: disable=wrong-import-position
+# ruff: noqa: E402
 import datetime
 import functools
 import json
-import os
 import time
+from types import SimpleNamespace
+from typing import Optional
 import warnings
 
 from absl import app
@@ -33,10 +46,11 @@ import jax.numpy as jp
 import mediapy as media
 from ml_collections import config_dict
 import mujoco
+import numpy as np
 
+import mujoco_playground
 from mujoco_playground import registry
 from mujoco_playground import wrapper
-import mujoco_playground
 from mujoco_playground.config import dm_control_suite_params
 from mujoco_playground.config import locomotion_params
 from mujoco_playground.config import manipulation_params
@@ -52,11 +66,20 @@ except ImportError:
   wandb = None
 
 
-xla_flags = os.environ.get("XLA_FLAGS", "")
-xla_flags += " --xla_gpu_triton_gemm_any=True"
-os.environ["XLA_FLAGS"] = xla_flags
-os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-os.environ["MUJOCO_GL"] = "egl"
+if not hasattr(jax, "device_put_replicated"):
+  # brax <= 0.14.2 still calls jax.device_put_replicated, which jax >= 0.11
+  # removed. Replicate the pytree onto every device along a leading axis, as
+  # the old function did.
+  def _device_put_replicated(tree, devices):
+    mesh = jax.sharding.Mesh(np.array(devices), ("devices",))
+    sharding = jax.sharding.NamedSharding(
+        mesh, jax.sharding.PartitionSpec("devices")
+    )
+    return jax.tree.map(
+        lambda x: jax.device_put(jp.stack([x] * len(devices)), sharding), tree
+    )
+
+  jax.device_put_replicated = _device_put_replicated
 
 # Ignore the info logs from brax
 logging.set_verbosity(logging.WARNING)
@@ -107,6 +130,18 @@ _NUM_TIMESTEPS = flags.DEFINE_integer(
 )
 _NUM_VIDEOS = flags.DEFINE_integer(
     "num_videos", 1, "Number of videos to record after training."
+)
+_EVAL_VIDEO_ENVS = flags.DEFINE_integer(
+    "eval_video_envs",
+    0,
+    "Number of environments to roll out and render with the current policy at"
+    " every evaluation. Videos go to <logdir>/eval_videos; with --use_tb, frame"
+    " strips are also logged to TensorBoard.",
+)
+_RENDER_CAMERA = flags.DEFINE_string(
+    "render_camera",
+    None,
+    "Name of the MJCF camera used for rollout videos (default: free camera).",
 )
 _NUM_EVALS = flags.DEFINE_integer("num_evals", 5, "Number of evaluations")
 _REWARD_SCALING = flags.DEFINE_float("reward_scaling", 0.1, "Reward scaling")
@@ -200,6 +235,29 @@ def get_rl_config(env_name: str) -> config_dict.ConfigDict:
   raise ValueError(f"Env {env_name} not found in {registry.ALL_ENVS}.")
 
 
+def scale_contact_buffers(
+    overrides: dict, env_name: str, ref_num_envs: int, num_envs: int
+) -> dict:
+  """Sizes the Warp contact buffers of a config for `num_envs` worlds.
+
+  `naconmax` and `naccdmax` count contacts across all worlds, and the tuned
+  env configs size them for the training batch (`ref_num_envs`). Copying them
+  to an evaluation or rendering env with a handful of worlds wastes GPU memory
+  and can run the training out of it.
+  """
+  env_cfg = registry.get_default_config(env_name)
+  overrides = dict(overrides)
+  for key in ("naconmax", "naccdmax"):
+    if key not in env_cfg:
+      continue
+    total = int(overrides.get(key, env_cfg[key]))
+    per_env = max(-(-total // max(ref_num_envs, 1)), 1)
+    # The buffer is shared by all worlds, so a small batch gets headroom for
+    # worlds with many contacts.
+    overrides[key] = min(total, max(4 * per_env * num_envs, 2048))
+  return overrides
+
+
 def rscope_fn(full_states, obs, rew, done):
   """
   All arrays are of shape (unroll_length, rscope_envs, ...)
@@ -216,6 +274,162 @@ def rscope_fn(full_states, obs, rew, done):
       "Collected rscope rollouts with reward"
       f" {episode_rewards.mean():.3f} +- {episode_rewards.std():.3f}"
   )
+
+
+class RolloutRenderer:
+  """Rolls out a policy in a few environments and renders the episodes.
+
+  Environments are wrapped like in training (episode bookkeeping, autoreset,
+  deferred vision rendering). Each rendered frame shows an external camera and,
+  for vision policies, the pixels the policy receives.
+  """
+
+  _RENDER_EVERY = 2
+  _STRIP_FRAMES = 8
+
+  def __init__(
+      self,
+      env_name: str,
+      env_cfg_overrides: dict,
+      ppo_params: config_dict.ConfigDict,
+      num_envs: int,
+      vision: bool,
+      seed: int,
+      camera: Optional[str] = None,
+  ):
+    self._camera = camera
+    overrides = scale_contact_buffers(
+        env_cfg_overrides, env_name, ppo_params.num_envs, num_envs
+    )
+    if vision:
+      overrides["vision_config.nworld"] = num_envs
+    self._env = registry.load(
+        env_name,
+        config=registry.get_default_config(env_name),
+        config_overrides=overrides,
+    )
+    self._wrapped = wrapper.wrap_for_brax_training(
+        self._env,
+        episode_length=ppo_params.episode_length,
+        action_repeat=ppo_params.get("action_repeat", 1),
+    )
+    self._num_envs = num_envs
+    self._vision = vision
+    self._episode_length = ppo_params.episode_length
+    self._seed = seed
+    self._make_policy = None
+    self._reset = jax.jit(self._wrapped.reset)
+    self._rollout = None
+    self._scene_option = mujoco.MjvOption()
+    self._scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = False
+    self._scene_option.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = False
+    self._scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
+
+  @property
+  def fps(self) -> float:
+    return 1.0 / self._env.dt / self._RENDER_EVERY
+
+  def _do_rollout(self, state, rng, params):
+    policy = self._make_policy(params, deterministic=True)
+
+    def step(carry, _):
+      state, rng = carry
+      rng, act_key = jax.random.split(rng)
+      act_keys = jax.random.split(act_key, self._num_envs)
+      act = jax.vmap(policy)(state.obs, act_keys)[0]
+      state = self._wrapped.step(state, act)
+      out = {
+          "qpos": state.data.qpos,
+          "qvel": state.data.qvel,
+          "mocap_pos": state.data.mocap_pos,
+          "mocap_quat": state.data.mocap_quat,
+          "xfrc_applied": state.data.xfrc_applied,
+          "reward": state.reward,
+          "done": state.done,
+      }
+      if self._vision:
+        out["pixels"] = {
+            k: v for k, v in state.obs.items() if k.startswith("pixels/")
+        }
+      return (state, rng), out
+
+    _, traj = jax.lax.scan(
+        step, (state, rng), None, length=self._episode_length
+    )
+    # (time, num_envs, ...) -> (num_envs, time, ...).
+    return jax.tree.map(lambda x: jp.moveaxis(x, 0, 1), traj)
+
+  def _policy_view(self, pixels: dict, env_idx: int, t: int, height: int):
+    """Tiles the policy's pixel observations for one frame as uint8."""
+    tiles = []
+    for key in sorted(pixels):
+      img = np.asarray(pixels[key][env_idx, t])
+      # Split RGB-D into an RGB tile and a depth tile.
+      splits = [img[..., :3], img[..., 3:]] if img.shape[-1] == 4 else [img]
+      for split in splits:
+        if split.shape[-1] == 1:
+          split = np.repeat(split, 3, axis=-1)
+        split = (np.clip(split, 0, 1) * 255).astype(np.uint8)
+        tiles.append(media.resize_image(split, (height, height)))
+    return np.concatenate(tiles, axis=1)
+
+  def render(
+      self,
+      make_policy,
+      params,
+      out_dir: epath.Path,
+      name: str,
+      writer=None,
+      step: int = 0,
+      height: int = 240,
+      width: int = 320,
+  ):
+    """Writes <out_dir>/<name><i>.mp4 per env and logs strips to TensorBoard."""
+    if self._make_policy is not make_policy:
+      self._make_policy = make_policy
+      self._rollout = jax.jit(self._do_rollout)
+    rng = jax.random.split(jax.random.PRNGKey(self._seed), self._num_envs)
+    state = self._reset(rng)
+    traj = self._rollout(state, jax.random.PRNGKey(self._seed + 1), params)
+    traj = jax.tree.map(np.asarray, traj)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    fields = ("qpos", "qvel", "mocap_pos", "mocap_quat", "xfrc_applied")
+    steps = range(0, self._episode_length, self._RENDER_EVERY)
+    for i in range(self._num_envs):
+      states = [
+          SimpleNamespace(
+              data=SimpleNamespace(**{k: traj[k][i, t] for k in fields})
+          )
+          for t in steps
+      ]
+      frames = self._env.render(
+          states,
+          height=height,
+          width=width,
+          camera=self._camera,
+          scene_option=self._scene_option,
+      )
+      if self._vision:
+        frames = [
+            np.concatenate(
+                [f, self._policy_view(traj["pixels"], i, t, f.shape[0])],
+                axis=1,
+            )
+            for f, t in zip(frames, steps)
+        ]
+      path = out_dir / f"{name}{i}.mp4"
+      media.write_video(path, frames, fps=self.fps)
+      print(f"Rollout video saved as '{path}'.")
+      if writer is not None:
+        idx = np.linspace(0, len(frames) - 1, self._STRIP_FRAMES).astype(int)
+        strip = np.concatenate([frames[j] for j in idx], axis=1)
+        writer.add_image(f"eval/rollout_env{i}", strip, step, dataformats="HWC")
+    if writer is not None:
+      writer.add_scalar(
+          "eval/video_episode_reward", traj["reward"].sum(axis=1).mean(), step
+      )
+      writer.flush()
 
 
 def main(argv):
@@ -421,7 +635,9 @@ def main(argv):
             f" reward={metrics['episode/sum_reward']:.3f}"
         )
 
-  eval_env_overrides = dict(env_cfg_overrides)
+  eval_env_overrides = scale_contact_buffers(
+      env_cfg_overrides, _ENV_NAME.value, ppo_params.num_envs, num_eval_envs
+  )
   if _VISION.value:
     eval_env_overrides["vision_config.nworld"] = num_eval_envs
   eval_env = registry.load(
@@ -430,7 +646,19 @@ def main(argv):
       config_overrides=eval_env_overrides,
   )
 
-  policy_params_fn = lambda *args: None
+  eval_renderer = None
+  if _EVAL_VIDEO_ENVS.value > 0:
+    eval_renderer = RolloutRenderer(
+        _ENV_NAME.value,
+        env_cfg_overrides,
+        ppo_params,
+        _EVAL_VIDEO_ENVS.value,
+        _VISION.value,
+        _SEED.value,
+        camera=_RENDER_CAMERA.value,
+    )
+
+  rscope_handle = None
   if _RSCOPE_ENVS.value:
     # Interactive visualisation of policy checkpoints
     from rscope import brax as rscope_utils
@@ -458,9 +686,19 @@ def main(argv):
         rscope_fn,
     )
 
-    def policy_params_fn(current_step, make_policy, params):  # pylint: disable=unused-argument
+  def policy_params_fn(current_step, make_policy, params):
+    if rscope_handle is not None:
       rscope_handle.set_make_policy(make_policy)
       # rscope_handle.dump_rollout(params) # Disabled to prevent rendering slice crash
+    if eval_renderer is not None:
+      eval_renderer.render(
+          make_policy,
+          params,
+          logdir / "eval_videos",
+          f"step_{current_step:012d}_env",
+          writer=writer,
+          step=current_step,
+      )
 
   # Train or load the model
   make_inference_fn, params, _ = train_fn(  # pylint: disable=no-value-for-parameter
@@ -477,87 +715,23 @@ def main(argv):
 
   print("Starting inference...")
 
-  # Create inference function.
-  inference_fn = make_inference_fn(params, deterministic=True)
-  jit_inference_fn = jax.jit(inference_fn)
-
-  infer_env_overrides = dict(env_cfg_overrides)
-  if _VISION.value:
-    infer_env_overrides["vision_config.nworld"] = _NUM_VIDEOS.value
-  infer_env = registry.load(
-      _ENV_NAME.value,
-      config=registry.get_default_config(_ENV_NAME.value),
-      config_overrides=infer_env_overrides,
-  )
-
   # Run evaluation rollouts matching how training handles batched environments.
-  wrapped_infer_env = wrapper.wrap_for_brax_training(
-      infer_env,
-      episode_length=ppo_params.episode_length,
-      action_repeat=ppo_params.get("action_repeat", 1),
+  if eval_renderer is not None and _EVAL_VIDEO_ENVS.value == _NUM_VIDEOS.value:
+    final_renderer = eval_renderer
+  else:
+    final_renderer = RolloutRenderer(
+        _ENV_NAME.value,
+        env_cfg_overrides,
+        ppo_params,
+        _NUM_VIDEOS.value,
+        _VISION.value,
+        _SEED.value,
+        camera=_RENDER_CAMERA.value,
+    )
+  print(f"FPS for rendering: {final_renderer.fps}")
+  final_renderer.render(
+      make_inference_fn, params, logdir, "rollout", height=480, width=640
   )
-
-  rng = jax.random.split(jax.random.PRNGKey(_SEED.value), _NUM_VIDEOS.value)
-  reset_states = jax.jit(wrapped_infer_env.reset)(rng)
-
-  empty_data = reset_states.data.__class__(
-      **{k: None for k in reset_states.data.__annotations__}
-  )  # pytype: disable=attribute-error
-  empty_traj = reset_states.__class__(
-      **{k: None for k in reset_states.__annotations__}
-  )  # pytype: disable=attribute-error
-  empty_traj = empty_traj.replace(data=empty_data)
-
-  def step(carry, _):
-    state, rng = carry
-    rng, act_key = jax.random.split(rng)
-    act_keys = jax.random.split(act_key, _NUM_VIDEOS.value)
-    act = jax.vmap(jit_inference_fn)(state.obs, act_keys)[0]
-    state = wrapped_infer_env.step(state, act)
-    traj_data = empty_traj.tree_replace({
-        "data.qpos": state.data.qpos,
-        "data.qvel": state.data.qvel,
-        "data.time": state.data.time,
-        "data.ctrl": state.data.ctrl,
-        "data.mocap_pos": state.data.mocap_pos,
-        "data.mocap_quat": state.data.mocap_quat,
-        "data.xfrc_applied": state.data.xfrc_applied,
-    })
-    return (state, rng), traj_data
-
-  @jax.jit
-  def do_rollout(state, rng):
-    _, traj = jax.lax.scan(
-        step, (state, rng), None, length=ppo_params.episode_length
-    )
-    return traj
-
-  traj_stacked = do_rollout(reset_states, jax.random.PRNGKey(_SEED.value + 1))
-  # traj_stacked has shape (time, nworld, ...), swap to (nworld, time, ...).
-  traj_stacked = jax.tree.map(lambda x: jp.moveaxis(x, 0, 1), traj_stacked)
-  trajectories = [None] * _NUM_VIDEOS.value
-  for i in range(_NUM_VIDEOS.value):
-    t = jax.tree.map(lambda x, i=i: x[i], traj_stacked)
-    trajectories[i] = [
-        jax.tree.map(lambda x, j=j: x[j], t)
-        for j in range(ppo_params.episode_length)
-    ]
-
-  # Render and save the rollout.
-  render_every = 2
-  fps = 1.0 / infer_env.dt / render_every
-  print(f"FPS for rendering: {fps}")
-  scene_option = mujoco.MjvOption()
-  scene_option.flags[mujoco.mjtVisFlag.mjVIS_TRANSPARENT] = False
-  scene_option.flags[mujoco.mjtVisFlag.mjVIS_PERTFORCE] = False
-  scene_option.flags[mujoco.mjtVisFlag.mjVIS_CONTACTFORCE] = False
-  for i, rollout in enumerate(trajectories):
-    traj = rollout[::render_every]
-    frames = infer_env.render(
-        traj, height=480, width=640, scene_option=scene_option
-    )
-    media.write_video(logdir / f"rollout{i}.mp4", frames, fps=fps)
-    print(f"Rollout video saved as '{logdir}/rollout{i}.mp4'.")
 
 
 def run():

@@ -25,6 +25,13 @@ python train_jax_ppo.py --env_name=CartpoleBalance --vision
 
 Use `python train_jax_ppo.py --help` to see possible options and usage. Logs and checkpoints are saved in `logs` directory.
 
+To follow a run in TensorBoard and to see what the policy does at every evaluation:
+```bash
+python train_jax_ppo.py --env_name=RebotDmPickCubeCartesian --vision --impl warp --use_tb --eval_video_envs 2
+tensorboard --logdir logs
+```
+`--use_tb` logs all evaluation metrics (`eval/episode_reward`, `eval/episode_reward/success`, ...) as scalars. `--eval_video_envs N` rolls out the current policy in `N` environments at every evaluation and writes `logs/<run>/eval_videos/step_<step>_env<i>.mp4`; with `--use_tb` a strip of frames from each video also appears under the Images tab. For vision policies the frames show the external camera next to the pixels the policy receives.
+
 ## Training with RSL-RL
 
 To train with RSL-RL, you can use the `train_rsl_rl.py` script. This script uses the RSL-RL algorithm to train an agent on a given environment.
