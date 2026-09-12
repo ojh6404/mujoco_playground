@@ -24,7 +24,7 @@ Example:
   cmd = policy.command(bgr_image[..., ::-1])   # RGB uint8, any resolution
   cmd = policy.command(depth=depth_m)          # depth policy: metres, float
   cmd = policy.command(rgb, depth=depth_m)     # RGB-D policy
-  # cmd.delta_xyz (m), cmd.delta_yaw (rad), cmd.close (bool)
+  # cmd.delta_xyz (m), cmd.delta_yaw (rad), cmd.gripper (0 closed .. 1 open)
 """
 
 import dataclasses
@@ -55,7 +55,10 @@ class Command:
   action: np.ndarray  # Raw policy output (dx, dy, dz, dyaw, gripper).
   delta_xyz: np.ndarray  # Target translation increment (m, base frame).
   delta_yaw: float  # Target rotation increment about the vertical (rad).
-  close: bool  # Close the gripper (else open).
+  gripper: float  # Opening target in [0, 1] (0 closed, 1 open), as
+  # RobotServer.set_gripper takes it; the env moves the fingers toward it at
+  # their speed limit, which the robot does on its own.
+  close: bool  # Opening target below half.
 
 
 class RebotRealPolicy:
@@ -156,11 +159,13 @@ class RebotRealPolicy:
       depth: Optional[np.ndarray] = None,
   ) -> Command:
     action = self.act(image, depth)
+    gripper = float(0.5 * (1.0 + action[4]))
     return Command(
         action=action,
         delta_xyz=action[:3] * self.action_scale,
         delta_yaw=float(action[3] * self.yaw_scale),
-        close=bool(action[4] < 0),
+        gripper=gripper,
+        close=gripper < 0.5,
     )
 
 

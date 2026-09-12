@@ -126,7 +126,10 @@ setup of `~/robot/rebot_ws/rebot_serl` (calibration of 2026-09-11):
   opening before training for the robot.
 - Actions, applied at 10 Hz: translation of the grasp-site target by up to
   1 cm per step along x, y, z, yaw about the vertical by up to 0.1 rad per
-  step (the compliance clips of rebot_serl), and open/close (a < 0 closes).
+  step (the compliance clips of rebot_serl), and a gripper opening target
+  (−1 closed, +1 open, reached at the finger speed; with a discrete
+  open/close threshold the trained policy dithered around it and dropped
+  grasped cubes).
   The target is clipped to `tip_x_range` × `tip_y_range` × `tip_z_range`
   and `yaw_range`; the arm joints follow through the same IK as the other
   Cartesian tasks. On the robot, apply the same increments to the TCP target
