@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Module for manipulation environments."""
+
 from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 import jax
@@ -29,6 +30,10 @@ from mujoco_playground._src.manipulation.franka_emika_panda_robotiq import push_
 from mujoco_playground._src.manipulation.leap_hand import reorient as leap_cube_reorient
 from mujoco_playground._src.manipulation.leap_hand import rotate_z as leap_rotate_z
 from mujoco_playground._src.manipulation.aero_hand import rotate_z as aero_hand_rotate_z
+from mujoco_playground._src.manipulation.rebot_b601_dm import pick as rebot_dm_pick
+from mujoco_playground._src.manipulation.rebot_b601_dm import pick_cartesian as rebot_dm_pick_cartesian
+from mujoco_playground._src.manipulation.rebot_b601_dm import stack as rebot_dm_stack
+from mujoco_playground._src.manipulation.rebot_b601_dm import stack_cartesian as rebot_dm_stack_cartesian
 
 _envs = {
     "AlohaHandOver": aloha_handover.HandOver,
@@ -41,6 +46,15 @@ _envs = {
     "LeapCubeReorient": leap_cube_reorient.CubeReorient,
     "LeapCubeRotateZAxis": leap_rotate_z.CubeRotateZAxis,
     "AeroCubeRotateZAxis": aero_hand_rotate_z.CubeRotateZAxis,
+    "RebotDmPickCube": rebot_dm_pick.RebotDmPickCube,
+    "RebotDmPickCubeOrientation": rebot_dm_pick.RebotDmPickCubeOrientation,
+    "RebotDmPickCubeCartesian": (
+        rebot_dm_pick_cartesian.RebotDmPickCubeCartesian
+    ),
+    "RebotDmStackCube": rebot_dm_stack.RebotDmStackCube,
+    "RebotDmStackCubeCartesian": (
+        rebot_dm_stack_cartesian.RebotDmStackCubeCartesian
+    ),
 }
 
 _cfgs = {
@@ -54,6 +68,11 @@ _cfgs = {
     "LeapCubeReorient": leap_cube_reorient.default_config,
     "LeapCubeRotateZAxis": leap_rotate_z.default_config,
     "AeroCubeRotateZAxis": aero_hand_rotate_z.default_config,
+    "RebotDmPickCube": rebot_dm_pick.default_config,
+    "RebotDmPickCubeOrientation": rebot_dm_pick.default_config,
+    "RebotDmPickCubeCartesian": rebot_dm_pick_cartesian.default_config,
+    "RebotDmStackCube": rebot_dm_stack.default_config,
+    "RebotDmStackCubeCartesian": rebot_dm_stack_cartesian.default_config,
 }
 
 _randomizer = {

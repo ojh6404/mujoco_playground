@@ -78,7 +78,7 @@ def brax_ppo_config(
     rl_config.num_envs = 2048
     rl_config.batch_size = 512
     rl_config.network_factory.policy_hidden_layer_sizes = (32, 32, 32, 32)
-  elif env_name == "PandaPickCubeCartesian":
+  elif env_name in ("PandaPickCubeCartesian", "RebotDmPickCubeCartesian"):
     rl_config.num_timesteps = 5_000_000
     rl_config.num_evals = 5
     rl_config.unroll_length = 10
@@ -93,7 +93,7 @@ def brax_ppo_config(
     rl_config.network_factory.policy_hidden_layer_sizes = (256, 256)
     rl_config.num_resets_per_eval = 1
     rl_config.max_grad_norm = 1.0
-  elif env_name.startswith("PandaPickCube"):
+  elif env_name.startswith(("PandaPickCube", "RebotDmPickCube")):
     rl_config.num_timesteps = 20_000_000
     rl_config.num_evals = 4
     rl_config.unroll_length = 10
@@ -105,6 +105,18 @@ def brax_ppo_config(
     rl_config.num_envs = 2048
     rl_config.batch_size = 512
     rl_config.network_factory.policy_hidden_layer_sizes = (32, 32, 32, 32)
+  elif env_name in ("RebotDmStackCube", "RebotDmStackCubeCartesian"):
+    rl_config.num_timesteps = 60_000_000
+    rl_config.num_evals = 6
+    rl_config.unroll_length = 10
+    rl_config.num_minibatches = 32
+    rl_config.num_updates_per_batch = 8
+    rl_config.discounting = 0.97
+    rl_config.learning_rate = 1e-3
+    rl_config.entropy_cost = 2e-2
+    rl_config.num_envs = 2048
+    rl_config.batch_size = 512
+    rl_config.network_factory.policy_hidden_layer_sizes = (64, 64, 64, 64)
   elif env_name == "PandaRobotiqPushCube":
     rl_config.num_timesteps = 1_800_000_000
     rl_config.num_evals = 10
@@ -220,7 +232,11 @@ def brax_vision_ppo_config(
       num_resets_per_eval=1,
   )
 
-  if env_name != "PandaPickCubeCartesian":
+  if env_name == "RebotDmStackCubeCartesian":
+    rl_config.num_timesteps = 20_000_000
+    rl_config.num_evals = 11
+    rl_config.reward_scaling = 0.1
+  elif env_name not in ("PandaPickCubeCartesian", "RebotDmPickCubeCartesian"):
     raise NotImplementedError(f"Vision PPO params not tested for {env_name}")
 
   return rl_config

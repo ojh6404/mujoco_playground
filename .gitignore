@@ -4,6 +4,7 @@ __pycache__
 .venv
 MUJOCO_LOG.TXT
 mujoco_menagerie
+Rebot_Arm_description
 checkpoints/
 logs
 .mujoco_playground_asset_cache/

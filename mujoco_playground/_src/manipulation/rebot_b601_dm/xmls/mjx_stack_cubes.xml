@@ -1,0 +1,30 @@
+<mujoco model="rebot_b601_dm stack cubes">
+  <include file="mjx_scene.xml"/>
+
+  <worldbody>
+    <!-- Both cubes collide with everything (contype/conaffinity 1), including each other. -->
+    <body name="red_cube" pos="0.28 -0.07 0.02">
+      <freejoint/>
+      <geom type="box" name="red_cube" size="0.02 0.02 0.02" condim="3" mass="0.05"
+       friction="1 .03 .003" rgba="1 0 0 1" solref="0.01 1"/>
+    </body>
+    <body name="blue_cube" pos="0.28 0.07 0.02">
+      <freejoint/>
+      <geom type="box" name="blue_cube" size="0.02 0.02 0.02" condim="3" mass="0.05"
+       friction="1 .03 .003" rgba="0 0 1 1" solref="0.01 1"/>
+    </body>
+    <!-- Visual marker of where the blue cube should end up; not rendered for vision policies (group 3). -->
+    <body mocap="true" name="mocap_target">
+      <geom type="box" size="0.02 0.02 0.02" rgba="0 0 1 0.2" contype="0" conaffinity="0" group="3"/>
+    </body>
+  </worldbody>
+
+  <include file="sensor_stack.xml"/>
+
+  <keyframe>
+    <!-- Gripper pointing down 14 cm above the table between the cubes, fingers open to 80 mm. -->
+    <key name="home"
+      qpos="0 -1.6239 -1.4167 1.3636 0 0 0.04 -0.04 0.28 -0.07 0.02 1 0 0 0 0.28 0.07 0.02 1 0 0 0"
+      ctrl="0 -1.6239 -1.4167 1.3636 0 0 0.04"/>
+  </keyframe>
+</mujoco>
