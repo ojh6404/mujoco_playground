@@ -144,6 +144,10 @@ setup of `~/robot/rebot_ws/rebot_serl` (calibration of 2026-09-11):
   by 7–10 mm for a few steps, which the policy has to account for.
 - The cube spawns at x 0.24–0.38 m, y ±0.12 m with a yaw of ±45°; the task
   is to lift it to 0.15 m (`target_height`, success within 5 cm in height).
+  On top of the `RebotDmPickCubeCartesian` rewards, both finger pads
+  touching the cube earns `grasped_reward` once (closing from fully open
+  takes five steps), and `guide_prob` of the episodes start from the
+  `picked` keyframe with the cube held 3 cm above the table.
 - Every episode draws a cube colour (yellow, light green, purple or red with
   ±0.08 jitter), a table shade (0.85–1.0), a room-floor shade, a camera pose
   offset (±1 cm, ≤2°), a brightness factor (0.7–1.3), a gain per colour

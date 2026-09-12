@@ -47,6 +47,12 @@ CUBE_COLORS = [
 def default_config() -> config_dict.ConfigDict:
   config = pick_cartesian.default_config()
   del config["box_init_range"]
+  # Both finger pads touching the cube: rewards the closing sequence, which
+  # takes five steps from fully open, before any lift.
+  config.reward_config.grasped_reward = 1.0
+  # Fraction of episodes that start from the `picked` keyframe (cube held
+  # 3 cm above the table), so lifting is explored from a grasped state.
+  config.guide_prob = 0.1
   config.ctrl_dt = 0.1  # The rebot_serl env rate.
   config.episode_length = 100
   # Per step: 1 cm (0.1 m/s) and 0.1 rad, the compliance clips of rebot_serl.
@@ -147,6 +153,10 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
         for geom in ["left_finger_pad", "right_finger_pad", "hand_box"]
     ]
     self._box_hand_found_sensor = self._mj_model.sensor("box_hand_found").id
+    self._pad_box_found_sensors = [
+        self._mj_model.sensor(f"{side}_finger_pad_box_found").id
+        for side in ["left", "right"]
+    ]
     self._guide_q = self._mj_model.keyframe("picked").qpos
     self._guide_ctrl = self._mj_model.keyframe("picked").ctrl
     self._init_cartesian_vision()
@@ -350,6 +360,7 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
             for k in self._config.reward_config.reward_scales.keys()
         },
         "reward/success": jp.array(0.0),
+        "reward/grasped": jp.array(0.0),
         "reward/lifted": jp.array(0.0),
         "no_soln": jp.array(0.0),
     }
@@ -425,7 +436,9 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
 
     # Occasionally start with the cube already grasped.
     info["rng"], key_swap = jax.random.split(info["rng"])
-    to_sample = newly_reset * jax.random.bernoulli(key_swap, 0.05)
+    to_sample = newly_reset * jax.random.bernoulli(
+        key_swap, self._config.guide_prob
+    )
     swapped_data = data.replace(qpos=self._guide_q, ctrl=self._guide_ctrl)
     data = jax.tree_util.tree_map_with_path(
         lambda path, x, y: ((1 - to_sample) * x + to_sample * y).astype(x.dtype)
@@ -463,6 +476,14 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
       total_reward += self._config.reward_config.action_rate * da
       total_reward += no_soln * self._config.reward_config.no_soln_reward
 
+    grasped = jp.all(
+        jp.array([
+            data.sensordata[self._mj_model.sensor_adr[sid]] > 0
+            for sid in self._pad_box_found_sensors
+        ])
+    )
+    total_reward += grasped * self._config.reward_config.grasped_reward
+
     box_pos = data.xpos[self._obj_body]
     lifted = (
         box_pos[2] > self._init_obj_pos[2] + 0.02
@@ -481,6 +502,7 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
     state.metrics.update(out_of_bounds=out_of_bounds.astype(float))
     state.metrics.update({f"reward/{k}": v for k, v in raw_rewards.items()})
     state.metrics.update({
+        "reward/grasped": grasped.astype(float),
         "reward/lifted": lifted.astype(float),
         "reward/success": success.astype(float),
         "no_soln": no_soln.astype(float),
