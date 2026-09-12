@@ -23,8 +23,15 @@ from mujoco_playground._src.manipulation.rebot_b601_dm import stack_cartesian as
 
 
 def default_config() -> config_dict.ConfigDict:
-  """Returns the default config, RebotDmStackCubeCartesian's."""
-  return rebot_stack_cartesian.default_config()
+  """Returns the default config, RebotDmStackCubeCartesian's.
+
+  The Warp contact and constraint buffers are larger, as for YamStackCube.
+  """
+  config = rebot_stack_cartesian.default_config()
+  config.naconmax = 64 * 2048
+  config.naccdmax = 64 * 2048
+  config.njmax = 512
+  return config
 
 
 class YamStackCubeCartesian(

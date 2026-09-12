@@ -26,9 +26,15 @@ def default_config() -> config_dict.ConfigDict:
   """Returns the default config for the YAM pick-cube tasks.
 
   The task is RebotDmPickCube's: the YAM and the reBot B601-DM have the same
-  link lengths, so the box spawn and target ranges are shared.
+  link lengths, so the box spawn and target ranges are shared. The four pad
+  strips of the YAM gripper make about twice the contacts of the reBot pads,
+  so the Warp contact and constraint buffers are larger.
   """
-  return rebot_pick.default_config()
+  config = rebot_pick.default_config()
+  config.naconmax = 48 * 2048
+  config.naccdmax = 48 * 2048
+  config.njmax = 256
+  return config
 
 
 class YamPickCube(base.YamMixin, rebot_pick.RebotDmPickCube):

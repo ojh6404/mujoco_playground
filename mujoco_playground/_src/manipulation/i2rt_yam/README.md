@@ -24,6 +24,10 @@ task returns the reBot config: the two arms have the same joint layout and
 link lengths, so the box spawn, target and gripper ranges carry over. Scenes,
 sensors, keyframe names and geom names (`hand_box`, `left_finger_pad`,
 `right_finger_pad`, site `gripper`) match the reBot scenes.
+The only config difference is the size of the Warp contact and constraint
+buffers (`naconmax`, `naccdmax`, `njmax`): the four pad strips of the YAM
+gripper make about twice the contacts of the two reBot pads (16 against 8
+while holding the cube), and the reBot's `njmax=128` overflowed.
 
 ## Model
 

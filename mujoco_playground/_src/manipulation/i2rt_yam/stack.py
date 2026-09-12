@@ -23,8 +23,16 @@ from mujoco_playground._src.manipulation.rebot_b601_dm import stack as rebot_sta
 
 
 def default_config() -> config_dict.ConfigDict:
-  """Returns the default config, RebotDmStackCube's."""
-  return rebot_stack.default_config()
+  """Returns the default config, RebotDmStackCube's.
+
+  The Warp contact and constraint buffers are larger: the four pad strips of
+  the YAM gripper make about twice the contacts of the reBot pads.
+  """
+  config = rebot_stack.default_config()
+  config.naconmax = 64 * 2048
+  config.naccdmax = 64 * 2048
+  config.njmax = 512
+  return config
 
 
 class YamStackCube(base.YamMixin, rebot_stack.RebotDmStackCube):

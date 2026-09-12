@@ -23,8 +23,15 @@ from mujoco_playground._src.manipulation.rebot_b601_dm import pick_cartesian as 
 
 
 def default_config() -> config_dict.ConfigDict:
-  """Returns the default config, RebotDmPickCubeCartesian's."""
-  return rebot_pick_cartesian.default_config()
+  """Returns the default config, RebotDmPickCubeCartesian's.
+
+  The Warp contact and constraint buffers are larger, as for YamPickCube.
+  """
+  config = rebot_pick_cartesian.default_config()
+  config.naconmax = 48 * 2048
+  config.naccdmax = 48 * 2048
+  config.njmax = 256
+  return config
 
 
 class YamPickCubeCartesian(
