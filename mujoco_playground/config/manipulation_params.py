@@ -155,6 +155,37 @@ def brax_ppo_config(
         value_obs_key="privileged_state",
     )
     rl_config.num_resets_per_eval = 1
+  elif env_name in (
+      "A0bShadowCubePickReorient",
+      "A0bShadowCubeRegrasp",
+      "A0bShadowTwoArmsCubeReorient",
+      "A0bShadowTwoArmsCubeRegrasp",
+  ):
+    # After the SAPG AllegroKuka PPO settings; rewards are in SAPG units, so
+    # they are scaled down for the value loss.
+    rl_config.num_timesteps = 300_000_000
+    rl_config.num_evals = 15
+    rl_config.num_minibatches = 32
+    rl_config.unroll_length = 16
+    rl_config.num_updates_per_batch = 4
+    rl_config.discounting = 0.99
+    rl_config.learning_rate = 3e-4
+    rl_config.entropy_cost = 1e-3
+    rl_config.num_envs = 8192
+    rl_config.batch_size = 256
+    rl_config.reward_scaling = 0.01
+    rl_config.max_grad_norm = 1.0
+    rl_config.network_factory = config_dict.create(
+        policy_hidden_layer_sizes=(512, 256, 128),
+        value_hidden_layer_sizes=(512, 256, 128),
+        policy_obs_key="state",
+        value_obs_key="privileged_state",
+    )
+    rl_config.num_resets_per_eval = 1
+    if env_name.startswith("A0bShadowTwoArms"):
+      # Halves the GPU memory of the two-arm scene (see naconmax in the env
+      # config).
+      rl_config.num_envs = 4096
   elif env_name == "AeroCubeRotateZAxis":
     rl_config.num_timesteps = 300_000_000
     rl_config.num_evals = 10

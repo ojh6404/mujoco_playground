@@ -1,0 +1,65 @@
+<mujoco model="a0bsrh_two_arms_scene">
+  <!--
+    Two A0B arms + Shadow Hands facing each other across a table, after the
+    AllegroKukaTwoArms tasks of SAPG. Arm i is attached with the prefix
+    "arm{i}/"; the environment enables collisions between the two hands.
+  -->
+  <include file="reorientation_cube.xml"/>
+
+  <statistic center="0 0 1.15" extent="1.4" meansize="0.01"/>
+
+  <option timestep="0.01" iterations="10" ls_iterations="8" integrator="implicitfast">
+    <flag eulerdamp="disable"/>
+  </option>
+
+  <custom>
+    <numeric data="60" name="max_contact_points"/>
+  </custom>
+
+  <visual>
+    <headlight diffuse=".8 .8 .8" ambient=".2 .2 .2" specular="1 1 1"/>
+    <rgba force="1 0 0 1"/>
+    <global azimuth="150" elevation="-20"/>
+    <map force="0.01" stiffness="500"/>
+    <quality shadowsize="8192"/>
+  </visual>
+
+  <asset>
+    <model name="a0bsrh" file="a0bsrh_table_mjx.xml"/>
+    <texture type="skybox" builtin="gradient" rgb1="1 1 1" rgb2="1 1 1" width="800" height="800"/>
+    <texture type="2d" name="groundplane" builtin="checker" mark="edge" rgb1="1 1 1" rgb2="1 1 1" markrgb="0 0 0"
+      width="300" height="300"/>
+    <material name="groundplane" texture="groundplane" texuniform="true" texrepeat="5 5" reflectance="0"/>
+    <material name="table" rgba="0.45 0.35 0.25 1"/>
+  </asset>
+
+  <worldbody>
+    <camera name="side" pos="0 -2.6 2.1" xyaxes="1 0 0 0 0.37 0.93"/>
+    <geom name="floor" pos="0 0 0" size="0 0 0.01" type="plane" material="groundplane" contype="1" conaffinity="1"/>
+    <!-- Table top at z = 1.02 between the arms. Collides with the cube, the hands (bit 1) and the forearms (bit 2). -->
+    <geom name="table" type="box" pos="0 0 1.0" size="0.6 0.45 0.02" material="table" contype="1" conaffinity="3" friction="0.8 0.02 0.001"/>
+    <body name="arm0" pos="-1 0 0">
+      <attach model="a0bsrh" body="robot0:body" prefix="arm0/"/>
+    </body>
+    <body name="arm1" pos="1 0 0" quat="0 0 0 1">
+      <attach model="a0bsrh" body="robot0:body" prefix="arm1/"/>
+    </body>
+    <body name="goal" mocap="true" pos="0.3 0 1.25">
+      <geom type="mesh" mesh="cube_mesh" material="dexcube" contype="0" conaffinity="0" density="0" group="2"/>
+      <geom type="box" size=".03 .03 .03" mass=".1" group="3" contype="0" conaffinity="0"/>
+    </body>
+  </worldbody>
+
+  <sensor>
+    <framepos name="cube_position" objtype="body" objname="cube"/>
+    <framequat name="cube_orientation" objtype="body" objname="cube"/>
+    <framelinvel name="cube_linvel" objtype="body" objname="cube"/>
+    <frameangvel name="cube_angvel" objtype="body" objname="cube"/>
+    <framepos name="goal_position" objtype="body" objname="goal"/>
+    <framequat name="cube_goal_orientation" objtype="body" objname="goal"/>
+    <framelinvel name="arm0_palm_linvel" objtype="site" objname="arm0/grasp_site"/>
+    <frameangvel name="arm0_palm_angvel" objtype="site" objname="arm0/grasp_site"/>
+    <framelinvel name="arm1_palm_linvel" objtype="site" objname="arm1/grasp_site"/>
+    <frameangvel name="arm1_palm_angvel" objtype="site" objname="arm1/grasp_site"/>
+  </sensor>
+</mujoco>

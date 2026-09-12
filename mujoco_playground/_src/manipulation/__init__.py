@@ -14,6 +14,7 @@
 
 """Module for manipulation environments."""
 
+import functools
 from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 import jax
@@ -30,6 +31,7 @@ from mujoco_playground._src.manipulation.franka_emika_panda_robotiq import push_
 from mujoco_playground._src.manipulation.leap_hand import reorient as leap_cube_reorient
 from mujoco_playground._src.manipulation.leap_hand import rotate_z as leap_rotate_z
 from mujoco_playground._src.manipulation.aero_hand import rotate_z as aero_hand_rotate_z
+from mujoco_playground._src.manipulation.a0b_shadow_hand import pick_reorient as a0bsrh_pick
 from mujoco_playground._src.manipulation.a0b_shadow_hand import reorient as a0bsrh_reorient
 
 _envs = {
@@ -44,6 +46,10 @@ _envs = {
     "LeapCubeRotateZAxis": leap_rotate_z.CubeRotateZAxis,
     "AeroCubeRotateZAxis": aero_hand_rotate_z.CubeRotateZAxis,
     "A0bShadowCubeReorient": a0bsrh_reorient.CubeReorient,
+    "A0bShadowCubePickReorient": a0bsrh_pick.CubePickReorient,
+    "A0bShadowCubeRegrasp": a0bsrh_pick.CubePickReorient,
+    "A0bShadowTwoArmsCubeReorient": a0bsrh_pick.CubePickReorient,
+    "A0bShadowTwoArmsCubeRegrasp": a0bsrh_pick.CubePickReorient,
 }
 
 _cfgs = {
@@ -58,6 +64,18 @@ _cfgs = {
     "LeapCubeRotateZAxis": leap_rotate_z.default_config,
     "AeroCubeRotateZAxis": aero_hand_rotate_z.default_config,
     "A0bShadowCubeReorient": a0bsrh_reorient.default_config,
+    "A0bShadowCubePickReorient": functools.partial(
+        a0bsrh_pick.default_config, num_arms=1, task="reorient"
+    ),
+    "A0bShadowCubeRegrasp": functools.partial(
+        a0bsrh_pick.default_config, num_arms=1, task="regrasp"
+    ),
+    "A0bShadowTwoArmsCubeReorient": functools.partial(
+        a0bsrh_pick.default_config, num_arms=2, task="reorient"
+    ),
+    "A0bShadowTwoArmsCubeRegrasp": functools.partial(
+        a0bsrh_pick.default_config, num_arms=2, task="regrasp"
+    ),
 }
 
 _randomizer = {
