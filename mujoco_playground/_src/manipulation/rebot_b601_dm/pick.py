@@ -66,17 +66,15 @@ def default_config() -> config_dict.ConfigDict:
 class RebotDmPickCube(base.RebotDmBase):
   """Bring a box to a target."""
 
+  SCENE_XML = base.XML_PATH / "mjx_single_cube.xml"
+
   def __init__(
       self,
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
       sample_orientation: bool = False,
   ):
-    super().__init__(
-        base.XML_PATH / "mjx_single_cube.xml",
-        config,
-        config_overrides,
-    )
+    super().__init__(self.SCENE_XML, config, config_overrides)
     self._post_init(obj_name="box", keyframe="home")
     self._sample_orientation = sample_orientation
 

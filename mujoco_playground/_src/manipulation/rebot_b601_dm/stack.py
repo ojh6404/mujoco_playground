@@ -72,16 +72,14 @@ def default_config() -> config_dict.ConfigDict:
 class RebotDmStackCube(base.RebotDmBase):
   """Pick up the blue cube and place it on top of the red cube."""
 
+  SCENE_XML = base.XML_PATH / "mjx_stack_cubes.xml"
+
   def __init__(
       self,
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
   ):
-    super().__init__(
-        base.XML_PATH / "mjx_stack_cubes.xml",
-        config,
-        config_overrides,
-    )
+    super().__init__(self.SCENE_XML, config, config_overrides)
     self._post_init_stack(keyframe="home")
 
   def _post_init_stack(self, keyframe: str) -> None:

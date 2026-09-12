@@ -78,17 +78,14 @@ class RebotDmPickCubeCartesian(
   cube's spawn line. Pixel observations need `vision=True` and `impl="warp"`.
   """
 
+  SCENE_XML = base.XML_PATH / "mjx_single_cube_camera.xml"
+
   def __init__(  # pylint: disable=non-parent-init-called,super-init-not-called
       self,
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
   ):
-    base.RebotDmBase.__init__(
-        self,
-        base.XML_PATH / "mjx_single_cube_camera.xml",
-        config,
-        config_overrides,
-    )
+    base.RebotDmBase.__init__(self, self.SCENE_XML, config, config_overrides)
     self._sample_orientation = False
     self._post_init(obj_name="box", keyframe="low_home")
 

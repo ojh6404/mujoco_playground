@@ -74,7 +74,7 @@ class CartesianVisionMixin:
     self._vision = self._config.vision
     self._defer_rendering = False
     self._kinematics = kinematics.SiteKinematics(
-        self._mj_model, base.ARM_JOINTS, "gripper"
+        self._mj_model, self.ARM_JOINTS, "gripper"
     )
     self._start_tip_pos, self._start_tip_rot = self._kinematics.forward(
         jp.array(self._init_ctrl[:6])

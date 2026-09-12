@@ -82,17 +82,14 @@ class RebotDmStackCubeCartesian(
   Pixel observations need `vision=True` and `impl="warp"`.
   """
 
+  SCENE_XML = base.XML_PATH / "mjx_stack_cubes_camera.xml"
+
   def __init__(  # pylint: disable=non-parent-init-called,super-init-not-called
       self,
       config: config_dict.ConfigDict = default_config(),
       config_overrides: Optional[Dict[str, Union[str, int, list[Any]]]] = None,
   ):
-    base.RebotDmBase.__init__(
-        self,
-        base.XML_PATH / "mjx_stack_cubes_camera.xml",
-        config,
-        config_overrides,
-    )
+    base.RebotDmBase.__init__(self, self.SCENE_XML, config, config_overrides)
     self._post_init_stack(keyframe="low_home")
     self._init_cartesian_vision()
     self._guide_q = self._mj_model.keyframe("picked").qpos

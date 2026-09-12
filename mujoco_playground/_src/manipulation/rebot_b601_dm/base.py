@@ -77,7 +77,15 @@ def get_assets() -> Dict[str, bytes]:
 
 
 class RebotDmBase(mjx_env.MjxEnv):
-  """Base environment for the reBot Arm B601-DM."""
+  """Base environment for the reBot Arm B601-DM.
+
+  Ports of the same tasks to other arms (see `i2rt_yam`) override the joint
+  names, `_get_assets` and the task classes' `SCENE_XML`; the scene must keep
+  the geom, site and keyframe names of the reBot scenes.
+  """
+
+  ARM_JOINTS = ARM_JOINTS
+  FINGER_JOINTS = FINGER_JOINTS
 
   def __init__(
       self,
@@ -89,7 +97,7 @@ class RebotDmBase(mjx_env.MjxEnv):
 
     self._xml_path = xml_path.as_posix()
     xml = xml_path.read_text()
-    self._model_assets = get_assets()
+    self._model_assets = self._get_assets()
     mj_model = mujoco.MjModel.from_xml_string(xml, assets=self._model_assets)
     mj_model.opt.timestep = self.sim_dt
 
@@ -97,11 +105,14 @@ class RebotDmBase(mjx_env.MjxEnv):
     self._mjx_model = mjx_env.put_model(mj_model, impl=self._config.impl)
     self._action_scale = self._config.action_scale
 
+  def _get_assets(self) -> Dict[str, bytes]:
+    return get_assets()
+
   def _post_init(self, obj_name: str, keyframe: str):
-    all_joints = ARM_JOINTS + FINGER_JOINTS
+    all_joints = self.ARM_JOINTS + self.FINGER_JOINTS
     self._robot_arm_qposadr = np.array([
         self._mj_model.jnt_qposadr[self._mj_model.joint(j).id]
-        for j in ARM_JOINTS
+        for j in self.ARM_JOINTS
     ])
     self._robot_qposadr = np.array([
         self._mj_model.jnt_qposadr[self._mj_model.joint(j).id]
