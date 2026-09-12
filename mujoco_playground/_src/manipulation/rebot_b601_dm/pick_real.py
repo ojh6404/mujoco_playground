@@ -169,14 +169,38 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
         self._config.randomization.cube_colors, dtype=float
     )
 
+  # Proprioception given to the vision policy next to the pixels: the
+  # integrated target of the grasp site relative to its start (3), the yaw
+  # target (1), the finger opening as a fraction of the travel (1) and the
+  # last action (5); all of it is known on the robot too. The critic also
+  # sees the cube position relative to the grasp site and its height.
+  PROPRIO_SIZE = 10
+  PRIVILEGED_SIZE = 14
+
   @property
   def observation_size(self) -> mjx_env.ObservationSize:
     if self._vision:
       width, height = self._config.vision_config.cam_res
       ss = self._config.supersample
       channels = cartesian.VISION_MODE_CHANNELS[self._config.vision_mode]
-      return {"pixels/view_0": (height // ss, width // ss, channels)}
+      return {
+          "pixels/view_0": (height // ss, width // ss, channels),
+          "state": (self.PROPRIO_SIZE,),
+          "privileged_state": (self.PRIVILEGED_SIZE,),
+      }
     return super().observation_size
+
+  def _proprio(self, data: mjx.Data, info: dict[str, Any]) -> jax.Array:
+    opening = data.ctrl[..., 6] / self._config.gripper_travel
+    return jp.concatenate(
+        [
+            info["current_pos"] - self._start_tip_pos,
+            info["current_yaw"][..., None],
+            opening[..., None],
+            info["last_action"],
+        ],
+        axis=-1,
+    )
 
   @staticmethod
   def _pool(img: jax.Array, ss: int) -> jax.Array:
@@ -374,6 +398,7 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
         "current_yaw": jp.array(0.0, dtype=float),
         "newly_reset": jp.array(False, dtype=bool),
         "prev_action": jp.zeros(self.action_size),
+        "last_action": jp.zeros(self.action_size),
         "_steps": jp.array(0, dtype=int),
         "action_history": jp.zeros((self._config.action_history_length,)),
         "filtered_ctrl": jp.array(self._init_ctrl[:6], dtype=float),
@@ -413,6 +438,9 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
     info["reached_box"] = jp.where(newly_reset, 0.0, info["reached_box"])
     info["prev_action"] = jp.where(
         newly_reset, jp.zeros(self.action_size), info["prev_action"]
+    )
+    info["last_action"] = jp.where(
+        newly_reset, jp.zeros(self.action_size), info["last_action"]
     )
 
     # The training wrapper restores the first state of the environment at
@@ -522,6 +550,7 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
         info["_steps"],
     )
 
+    info["last_action"] = action
     obs = self._get_obs(data, info)
     obs = jp.concat([obs, no_soln.reshape(1), action], axis=0)
     state = state.replace(  # pyrefly: ignore[missing-attribute]
@@ -631,7 +660,19 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
     pixels = jp.clip(
         pixels + info["noise_std"][..., None, None, None] * noise, 0.0, 1.0
     )
-    obs = {"pixels/view_0": pixels}
+    proprio = self._proprio(data, info)
+    cube_rel = (
+        data.xpos[..., self._obj_body, :]
+        - data.site_xpos[..., self._gripper_site, :]
+    )
+    privileged = jp.concatenate(
+        [proprio, cube_rel, data.xpos[..., self._obj_body, 2:3]], axis=-1
+    )
+    obs = {
+        "pixels/view_0": pixels,
+        "state": proprio,
+        "privileged_state": privileged,
+    }
     return state.replace(  # pyrefly: ignore[missing-attribute]
         data=data, obs=obs
     )

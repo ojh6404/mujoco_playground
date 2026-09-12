@@ -243,6 +243,9 @@ def brax_vision_ppo_config(
   elif env_name == "RebotDmPickCubeReal":
     rl_config.num_timesteps = 20_000_000
     rl_config.num_evals = 11
+    # Proprioception next to the pixels; the critic also sees the cube.
+    rl_config.network_factory.policy_obs_key = "state"
+    rl_config.network_factory.value_obs_key = "privileged_state"
   elif env_name not in ("PandaPickCubeCartesian", "RebotDmPickCubeCartesian"):
     raise NotImplementedError(f"Vision PPO params not tested for {env_name}")
 

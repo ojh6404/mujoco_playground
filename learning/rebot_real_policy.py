@@ -19,8 +19,15 @@ left D435i (cam_b) at 10 Hz and apply the returned increments to the TCP
 target of `RobotServer.set_target_pose` (base frame, top-down orientation)
 and to the gripper. No simulator or GPU renderer is needed at inference time.
 
+The policy also takes the proprioception the env provides next to the
+pixels: the integrated target increments since the episode start, the
+gripper opening target and the last action. The helper keeps that state
+itself, so call reset() at every episode start (robot at the ready pose,
+fingers open) and then only feed images.
+
 Example:
   policy = RebotRealPolicy("logs/rebot_real/<run>/checkpoints")
+  policy.reset()
   cmd = policy.command(bgr_image[..., ::-1])   # RGB uint8, any resolution
   cmd = policy.command(depth=depth_m)          # depth policy: metres, float
   cmd = policy.command(rgb, depth=depth_m)     # RGB-D policy
@@ -94,19 +101,52 @@ class RebotRealPolicy:
     self.action_scale = float(env_config["action_scale"])
     self.yaw_scale = float(env_config["yaw_scale"])
 
+    self.gripper_travel = float(env_config["gripper_travel"])
+    lo = [
+        env_config[k][0] for k in ("tip_x_range", "tip_y_range", "tip_z_range")
+    ]
+    hi = [
+        env_config[k][1] for k in ("tip_x_range", "tip_y_range", "tip_z_range")
+    ]
+    self._tip_lo, self._tip_hi = np.array(lo), np.array(hi)
+    self._yaw_lo, self._yaw_hi = env_config["yaw_range"]
+    self._gripper_step = float(env_config["gripper_speed"]) * float(
+        env_config["ctrl_dt"]
+    )
+    self.reset()
+
     rl_config = manipulation_params.brax_vision_ppo_config(ENV_NAME)
     network_factory = functools.partial(
         ppo_networks_vision.make_ppo_networks_vision,
         **rl_config.network_factory,
     )
     networks = network_factory(
-        observation_size={"pixels/view_0": (self.height, self.width, channels)},
+        observation_size={
+            "pixels/view_0": (self.height, self.width, channels),
+            "state": (10,),
+            "privileged_state": (14,),
+        },
         action_size=ACTION_SIZE,
     )
     make_policy = ppo_networks.make_inference_fn(networks)
     params = ppo_checkpoint.load(path.as_posix())
     self._policy = jax.jit(make_policy(params, deterministic=True))
     self._rng = jax.random.PRNGKey(seed)
+
+  # Start pose of the grasp site in the env, for the workspace clip.
+  START_TIP = np.array([0.30, 0.0, 0.19])
+
+  def reset(self) -> None:
+    """Call at the start of an episode: ready pose, fingers fully open."""
+    self.delta = np.zeros(3)  # Target increments since the start (m).
+    self.yaw = 0.0  # Yaw target (rad).
+    self.opening = 1.0  # Finger opening target, fraction of the travel.
+    self.last_action = np.zeros(ACTION_SIZE)
+
+  def proprio(self) -> np.ndarray:
+    return np.concatenate(
+        [self.delta, [self.yaw, self.opening], self.last_action]
+    ).astype(np.float32)
 
   def preprocess(
       self,
@@ -148,10 +188,35 @@ class RebotRealPolicy:
       depth: Optional[np.ndarray] = None,
   ) -> np.ndarray:
     """Returns the policy action in [-1, 1]."""
-    obs = {"pixels/view_0": jp.asarray(self.preprocess(image, depth))[None]}
+    obs = {
+        "pixels/view_0": jp.asarray(self.preprocess(image, depth))[None],
+        "state": jp.asarray(self.proprio())[None],
+        "privileged_state": jp.zeros((1, 14)),  # Critic input, unused.
+    }
     self._rng, key = jax.random.split(self._rng)
     action, _ = self._policy(obs, key)
-    return np.clip(np.asarray(action[0]), -1.0, 1.0)
+    action = np.clip(np.asarray(action[0]), -1.0, 1.0)
+    # Track the targets the way the env does (clipped to its workspace).
+    self.delta = (
+        np.clip(
+            self.START_TIP + self.delta + action[:3] * self.action_scale,
+            self._tip_lo,
+            self._tip_hi,
+        )
+        - self.START_TIP
+    )
+    self.yaw = float(
+        np.clip(
+            self.yaw + action[3] * self.yaw_scale, self._yaw_lo, self._yaw_hi
+        )
+    )
+    target = 0.5 * (1.0 + action[4])
+    step = self._gripper_step / self.gripper_travel
+    self.opening = float(
+        np.clip(target, self.opening - step, self.opening + step)
+    )
+    self.last_action = action
+    return action
 
   def command(
       self,
