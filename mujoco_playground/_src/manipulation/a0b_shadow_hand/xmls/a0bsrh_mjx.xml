@@ -1,0 +1,342 @@
+<mujoco model="a0b_shadow_hand">
+  <!--
+    A0B arm with a Shadow Hand (a0bsrh_model, JSK), adapted for MJX:
+    mesh assets are referenced by file name, arm links do not collide, and the
+    0.5 mm contact margins are removed (MJX does not support margins on mesh
+    contacts). Joint, tendon, contact-pair and actuator definitions are the
+    original ones.
+  -->
+  <compiler angle="radian" autolimits="true"/>
+
+    
+
+    <default>
+        <default class="robot0:asset_class">
+            <geom friction="0.05" condim="4" margin="0" contype="1" conaffinity="1"/>
+            <joint limited="true" damping="0.1" armature="0.001" margin="0.01" frictionloss="0.001"/>
+            <site size="0.005" rgba="0.4 0.9 0.4 1"/>
+            <general ctrllimited="true" forcelimited="true"/>
+        </default>
+        <default class="robot0:D_Touch">
+            <site type="box" size="0.009 0.004 0.013" pos="0 -0.004 0.018" rgba="0.8 0.8 0.8 0.15" group="4"/>
+        </default>
+        <default class="robot0:DC_Hand">
+            <geom material="robot0:MatColl" condim="4" friction="0.05" contype="1" conaffinity="0" group="4"/>
+        </default>
+        <default class="robot0:D_Visual">
+            <geom material="robot0:MatViz" contype="0" conaffinity="0" group="1" type="mesh"/>
+        </default>
+    </default>
+
+    <contact>
+        <pair geom1="robot0:C_ffdistal" geom2="robot0:C_thdistal" condim="1"/>
+        <pair geom1="robot0:C_ffmiddle" geom2="robot0:C_thdistal" condim="1"/>
+        <pair geom1="robot0:C_ffproximal" geom2="robot0:C_thdistal" condim="1"/>
+        <pair geom1="robot0:C_mfproximal" geom2="robot0:C_thdistal" condim="1"/>
+        <pair geom1="robot0:C_mfdistal" geom2="robot0:C_thdistal" condim="1"/>
+        <pair geom1="robot0:C_rfdistal" geom2="robot0:C_thdistal" condim="1"/>
+        <pair geom1="robot0:C_lfdistal" geom2="robot0:C_thdistal" condim="1"/>
+        <pair geom1="robot0:C_palm0" geom2="robot0:C_thdistal" condim="1"/>
+        <pair geom1="robot0:C_mfdistal" geom2="robot0:C_ffdistal" condim="1"/>
+        <pair geom1="robot0:C_rfdistal" geom2="robot0:C_mfdistal" condim="1"/>
+        <pair geom1="robot0:C_lfdistal" geom2="robot0:C_rfdistal" condim="1"/>
+        <pair geom1="robot0:C_mfproximal" geom2="robot0:C_ffproximal" condim="1"/>
+        <pair geom1="robot0:C_rfproximal" geom2="robot0:C_mfproximal" condim="1"/>
+        <pair geom1="robot0:C_lfproximal" geom2="robot0:C_rfproximal" condim="1"/>
+        <pair geom1="robot0:C_lfdistal" geom2="robot0:C_rfdistal" condim="1"/>
+        <pair geom1="robot0:C_lfdistal" geom2="robot0:C_mfdistal" condim="1"/>
+        <pair geom1="robot0:C_lfdistal" geom2="robot0:C_rfmiddle" condim="1"/>
+        <pair geom1="robot0:C_lfmiddle" geom2="robot0:C_rfdistal" condim="1"/>
+        <pair geom1="robot0:C_lfmiddle" geom2="robot0:C_rfmiddle" condim="1"/>
+    </contact>
+
+    <tendon>
+        <fixed name="robot0:T_FFJ1c" limited="true" range="-0.001 0.001">
+            <joint joint="ind_joint0" coef="0.00705"/>
+            <joint joint="ind_joint1" coef="-0.00805"/>
+        </fixed>
+        <fixed name="robot0:T_MFJ1c" limited="true" range="-0.001 0.001">
+            <joint joint="mid_joint0" coef="0.00705"/>
+            <joint joint="mid_joint1" coef="-0.00805"/>
+        </fixed>
+        <fixed name="robot0:T_RFJ1c" limited="true" range="-0.001 0.001">
+            <joint joint="rin_joint0" coef="0.00705"/>
+            <joint joint="rin_joint1" coef="-0.00805"/>
+        </fixed>
+        <fixed name="robot0:T_LFJ1c" limited="true" range="-0.001 0.001">
+            <joint joint="lit_joint0" coef="0.00705"/>
+            <joint joint="lit_joint1" coef="-0.00805"/>
+        </fixed>
+    </tendon>
+
+    <actuator>
+        <position name="a0b_joint0" class="robot0:asset_class" joint="a0b_joint0" ctrlrange="-1.57 1.57"             kp="280" kv="50" forcerange="-280 280"/>
+        <position name="a0b_joint1" class="robot0:asset_class" joint="a0b_joint1" ctrlrange="-3.1416 3.1416"         kp="280" kv="50" forcerange="-280 280"/>
+        <position name="a0b_joint2" class="robot0:asset_class" joint="a0b_joint2" ctrlrange="-2.35 2.35"             kp="280" kv="50" forcerange="-280 280"/>
+        <position name="a0b_joint3" class="robot0:asset_class" joint="a0b_joint3" ctrlrange="-3.1416 3.1416"         kp="280" kv="50" forcerange="-280 280"/>
+        <position name="a0b_joint4" class="robot0:asset_class" joint="a0b_joint4" ctrlrange="-2.35 2.35"             kp="280" kv="50" forcerange="-280 280"/>
+        <position name="a0b_joint5" class="robot0:asset_class" joint="a0b_joint5" ctrlrange="-3.1416 3.1416"         kp="280" kv="50" forcerange="-280 280"/>
+
+        <position name="wrist_joint1" class="robot0:asset_class" joint="wrist_joint1" ctrlrange="-0.523599 0.174533" kp="5"   kv="1"   forcerange="-10 10"/>
+        <position name="wrist_joint0" class="robot0:asset_class" joint="wrist_joint0" ctrlrange="-0.698132 0.488692" kp="5"   kv="1"   forcerange="-30 30"/>
+        <position name="ind_joint3"   class="robot0:asset_class" joint="ind_joint3"   ctrlrange="-0.349066 0.349066" kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="ind_joint2"   class="robot0:asset_class" joint="ind_joint2"   ctrlrange="-0.261799 1.5708"   kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="ind_joint1"   class="robot0:asset_class" joint="ind_joint1"   ctrlrange="0.0 1.5708"         kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="mid_joint3"   class="robot0:asset_class" joint="mid_joint3"   ctrlrange="-0.349066 0.349066" kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="mid_joint2"   class="robot0:asset_class" joint="mid_joint2"   ctrlrange="-0.261799 1.5708"   kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="mid_joint1"   class="robot0:asset_class" joint="mid_joint1"   ctrlrange="0.0 1.5708"         kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="rin_joint3"   class="robot0:asset_class" joint="rin_joint3"   ctrlrange="-0.349066 0.349066" kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="rin_joint2"   class="robot0:asset_class" joint="rin_joint2"   ctrlrange="-0.261799 1.5708"   kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="rin_joint1"   class="robot0:asset_class" joint="rin_joint1"   ctrlrange="0.0 1.5708"         kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="lit_joint4"   class="robot0:asset_class" joint="lit_joint4"   ctrlrange="0 0.785"            kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="lit_joint3"   class="robot0:asset_class" joint="lit_joint3"   ctrlrange="-0.349066 0.349066" kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="lit_joint2"   class="robot0:asset_class" joint="lit_joint2"   ctrlrange="-0.261799 1.5708"   kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="lit_joint1"   class="robot0:asset_class" joint="lit_joint1"   ctrlrange="0.0 1.5708"         kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="thu_joint4"   class="robot0:asset_class" joint="thu_joint4"   ctrlrange="-1.0472 1.0472"     kp="5"   kv="0.5" forcerange=" -5  5"/>
+        <position name="thu_joint3"   class="robot0:asset_class" joint="thu_joint3"   ctrlrange="0 1.22173"          kp="5"   kv="0.5" forcerange=" -3  3"/>
+        <position name="thu_joint2"   class="robot0:asset_class" joint="thu_joint2"   ctrlrange="-0.20944 0.20944"   kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="thu_joint1"   class="robot0:asset_class" joint="thu_joint1"   ctrlrange="-0.698132 0.698132" kp="1"   kv="0.1" forcerange=" -2  2"/>
+        <position name="thu_joint0"   class="robot0:asset_class" joint="thu_joint0"   ctrlrange="-0.261799 1.5708"   kp="1"   kv="0.1" forcerange=" -1  1"/>
+    </actuator>
+
+  <asset>
+
+
+    <material name="robot0:MatColl" specular="1" shininess="0.3" reflectance="0.5" rgba="0.4 0.5 0.6 1"/>
+    <material name="robot0:MatViz" specular="0.75" shininess="0.1" reflectance="0.5" rgba="0.93 0.93 0.93 1"/>
+
+    <material name="A0B_black" specular="0.5" shininess="0.25" rgba="0.1 0.1 0.1 1"/>
+    <material name="A0B_linkgray" specular="0.5" shininess="0.25" rgba="0.2 0.2 0.2 1"/>
+
+    <material name="black" specular="0.5" shininess="0.25" rgba="0.16355 0.16355 0.16355 1"/>
+    <material name="gray" specular="0.0" shininess="0.25" rgba="0.80848 0.80848 0.80848 1"/>
+    <material name="metallic" specular="0" shininess="0.25" rgba="0.9 0.9 0.9 1"/>
+    <material name="pink" specular="0" shininess="0.25" rgba="0.996 0.75 0.79 1"/>
+
+    <mesh name="robot0:forearm0"     scale="0.001 0.001 0.001"  file="forearm_0.obj"/>
+    <mesh name="robot0:forearm1"     scale="0.001 0.001 0.001"  file="forearm_1.obj"/>
+    <mesh name="robot0:forearm_cvx"  scale="0.001 0.001 0.001"  file="forearm_collision.obj"/>
+    <mesh name="robot0:wrist"        scale="0.001 0.001 0.001"  file="wrist.obj"/>
+    <mesh name="robot0:palm"         scale="0.001 0.001 0.001"  file="palm.obj"/>
+    <mesh name="robot0:knuckle"      scale="0.001 0.001 0.001"  file="f_knuckle.obj"/>
+    <mesh name="robot0:F3"           scale="0.001 0.001 0.001"  file="f_proximal.obj"/>
+    <mesh name="robot0:F2"           scale="0.001 0.001 0.001"  file="f_middle.obj"/>
+    <mesh name="robot0:F1"           scale="0.001 0.001 0.001"  file="f_distal_pst.obj"/>
+    <mesh name="robot0:lfmetacarpal" scale="0.001 0.001 0.001"  file="lf_metacarpal.obj"/>
+    <mesh name="robot0:TH3_z"        scale="0.001 0.001 0.001"  file="th_proximal.obj"/>
+    <mesh name="robot0:TH2_z"        scale="0.001 0.001 0.001"  file="th_middle.obj"/>
+    <mesh name="robot0:TH1_z"        scale="0.001 0.001 0.001"  file="th_distal_pst.obj"/>
+
+    <mesh name="robot0:body"                                    file="BODY_mesh.stl"/>
+    <mesh name="robot0:arm_link0"                               file="RARM_LINK0_mesh.stl"/>
+    <mesh name="robot0:arm_link1"                               file="RARM_LINK1_mesh.stl"/>
+    <mesh name="robot0:arm_link5"                               file="RARM_LINK5_mesh.stl"/>
+    <mesh name="robot0:arm_adaptor"  scale="0.001 0.001 0.001"  file="ADAPTOR.stl"/>
+  </asset>
+
+  <worldbody>
+
+    <body gravcomp="1" name="robot0:body" quat="1 0 0 0" pos="0 0 1.315">
+        <geom class="robot0:D_Visual" pos="0.16 0 0" name="robot0:body" mesh="robot0:body" material="A0B_black"/>
+        <geom class="robot0:DC_Hand" contype="0" conaffinity="0" pos="0.16 0 0" name="robot0:C_body" type="mesh" mesh="robot0:body" rgba="0.4 0.5 0.6 0.7"/>
+        <body childclass="robot0:asset_class" name="robot0:arm_link0">
+            <inertial pos="0.00761 0.01398 0.00204" quat="0.0051901 0.691747 -0.2314 0.684042" mass="1.25859" diaginertia="0.00246053 0.00232073 0.00175486"/>
+            <joint name="a0b_joint0" type="hinge" axis="0 0 1" range="-1.57 1.57" armature="0.97356" frictionloss="0.5" damping="90"/>
+            <geom class="robot0:D_Visual" pos="0 0 0" name="robot0:arm_link0" mesh="robot0:arm_link0" material="A0B_linkgray"/>
+            <geom class="robot0:DC_Hand" contype="0" conaffinity="0" name="robot0:C_arm_link0" type="mesh" mesh="robot0:arm_link0" rgba="0.4 0.5 0.6 0.7"/>
+            <body gravcomp="1" name="robot0:arm_link1">
+                <inertial pos="0.17253 0 0.01555" quat="0.539904 0.456644 0.456734 0.539791" mass="1.66751" diaginertia="0.0164189 0.0151417 0.00262586"/>
+                <joint name="a0b_joint1" type="hinge" axis="1 0 0" range="-3.1416 3.1416" armature="0.97356" frictionloss="0.5" damping="75"/>
+                <geom class="robot0:D_Visual" pos="0 0 0" name="robot0:arm_link1" mesh="robot0:arm_link1" material="A0B_black"/>
+                <geom class="robot0:DC_Hand" contype="0" conaffinity="0" name="robot0:C_arm_link1" type="mesh" mesh="robot0:arm_link1" rgba="0.4 0.5 0.6 0.7"/>
+                <body gravcomp="1" name="robot0:arm_link2" pos="0.3 0 0">
+                    <inertial pos="0.00761 0.01398 0.00204" quat="0.0051901 0.691747 -0.2314 0.684042" mass="1.25859" diaginertia="0.00246053 0.00232073 0.00175486"/>
+                    <joint name="a0b_joint2" type="hinge" axis="0 0 1" range="-2.35 2.35" armature="0.97356" frictionloss="0.5" damping="80"/>
+                    <geom class="robot0:D_Visual" pos="0 0 0" name="robot0:arm_link2" mesh="robot0:arm_link0" material="A0B_linkgray"/>
+                    <geom class="robot0:DC_Hand" contype="0" conaffinity="0" pos="0 0 0" name="robot0:C_arm_link2" type="mesh" mesh="robot0:arm_link0" rgba="0.4 0.5 0.6 0.7"/>
+                    <body gravcomp="1" name="robot0:arm_link3">
+                        <inertial pos="0.17253 0 0.01555" quat="0.539904 0.456644 0.456734 0.539791" mass="1.66751" diaginertia="0.0164189 0.0151417 0.00262586"/>
+                        <joint name="a0b_joint3" type="hinge" axis="1 0 0" range="-3.1416 3.1416" armature="0.97356" frictionloss="0.5" damping="75"/>
+                        <geom class="robot0:D_Visual" pos="0 0 0" name="robot0:arm_link3" mesh="robot0:arm_link1" material="A0B_black"/>
+                        <geom class="robot0:DC_Hand" contype="0" conaffinity="0" name="robot0:C_arm_link3" type="mesh" mesh="robot0:arm_link1" rgba="0.4 0.5 0.6 0.7"/>
+                        <body gravcomp="1" name="robot0:arm_link4" pos="0.3 0 0">
+                            <inertial pos="0.00761 0.01398 0.00204" quat="0.0051901 0.691747 -0.2314 0.684042" mass="1.25859" diaginertia="0.00246053 0.00232073 0.00175486"/>
+                            <joint name="a0b_joint4" type="hinge" pos="0 0 0" axis="0 0 1" range="-2.35 2.35" armature="0.97356" frictionloss="0.5" damping="80"/>
+                            <geom class="robot0:D_Visual" pos="0 0 0" name="robot0:arm_link4" mesh="robot0:arm_link0" material="A0B_linkgray"/>
+                            <geom class="robot0:DC_Hand" contype="0" conaffinity="0" pos="0 0 0" name="robot0:C_arm_link4" type="mesh" mesh="robot0:arm_link0" rgba="0.4 0.5 0.6 0.7"/>
+                            <body gravcomp="1" name="robot0:arm_link5">
+                                <inertial pos="0.220409 -1.01017e-05 -0.000414442" quat="0.497411 0.50251 0.496393 0.503647" mass="5.02948" diaginertia="0.0445789 0.0444117 0.0102858"/>
+                                <joint name="a0b_joint5" type="hinge" axis="1 0 0" range="-3.1416 3.1416" armature="0.97356" />
+                                <geom class="robot0:D_Visual" pos="0 0 0" name="robot0:arm_link5" mesh="robot0:arm_link5" material="A0B_black" />
+                                <geom class="robot0:DC_Hand" contype="0" conaffinity="0" name="robot0:C_arm_link5" type="mesh" mesh="robot0:arm_link5" rgba="0.4 0.5 0.6 0.7" />
+
+                                <geom class="robot0:D_Visual" pos="0.188 0 0" quat="0.499998 0.5 -0.500002 -0.5" name="robot0:arm_adaptor" mesh="robot0:arm_adaptor" material="gray" />
+                                <geom class="robot0:DC_Hand" contype="0" conaffinity="0" name="robot0:C_arm_adaptor" type="mesh" mesh="robot0:arm_adaptor" pos="0.188 0 0" quat="0.499998 0.5 -0.500002 -0.5" rgba="0.4 0.5 0.6 0.7" />
+                                
+                                <geom class="robot0:D_Visual" pos="0.188 0 0" quat="0.707107 0.000000 0.707107 0.000000" name="robot0:V_forearm0" mesh="robot0:forearm0" material="black" />
+                                <geom class="robot0:D_Visual" pos="0.188 0 0" quat="0.707107 0.000000 0.707107 0.000000" name="robot0:V_forearm1" mesh="robot0:forearm1" material="black" />
+                                <geom class="robot0:DC_Hand" contype="0" conaffinity="0" name="robot0:C_forearm" type="mesh" mesh="robot0:forearm_cvx" pos="0.188 0 0" quat="0.707107 0.000000 0.707107 0.000000" rgba="0.4 0.5 0.6 0.7" />
+                                <geom class="robot0:DC_Hand" size="0.035 0.035 0.035" pos="3.6900004e-01 0.0 7.2400008e-07" quat="-0.65328154 0.65328148 0.27059822 -0.27059887" type="box"/>
+
+                                        <body gravcomp="1" name="robot0:wrist" pos="0.40101 -7.82485e-07 -0.00999921" quat="0.500002 0.5 0.499998 0.5">
+                                            <inertial mass="0.1" pos="0 0 0.029" quat="0.5 0.5 0.5 0.5" diaginertia="6.4e-05 4.38e-05 3.5e-05"/>
+                                            <joint name="wrist_joint1" type="hinge" pos="0 0 0" axis="0 1 0" range="-0.523599 0.174533" damping="0.5" frictionloss="0.01" margin="0.026" armature="0.00676" user="1123"/>
+                                            <geom class="robot0:D_Visual" name="robot0:V_wrist" mesh="robot0:wrist" material="metallic"/>
+
+                                            <body gravcomp="1" name="robot0:palm" pos="0 0 0.034">
+                                                <site name="grasp_site" pos="0.011 -0.045 0.04" size="0.01" group="4"/>
+                                                <inertial mass="0.3" pos="0 0 0.035" quat="1 0 0 1" diaginertia="0.0005287 0.0003581 0.000191"/>
+                                                <joint name="wrist_joint0" type="hinge" pos="0 0 0" axis="1 0 0" range="-0.698132 0.488692" damping="0.5" frictionloss="0.01" margin="0.026" armature="0.00676" user="1122"/>
+                                                <geom class="robot0:D_Visual" name="robot0:V_palm" mesh="robot0:palm" material="black"/>
+                                                <geom class="robot0:DC_Hand" name="robot0:C_palm0" type="box" pos="0.011 0 0.038" size="0.032 0.0111 0.049" rgba="0.4 0.5 0.6 0.1"/>
+                                                <geom class="robot0:DC_Hand" name="robot0:C_palm1" type="box" pos="-0.032 0 0.014" size="0.011 0.0111 0.025" rgba="0.4 0.5 0.6 0.1"/>
+
+                                                <body gravcomp="1" name="robot0:ffknuckle" pos="0.033 0 0.095">
+                                                    <inertial mass="0.008" pos="0 0 0" quat="0.5 0.5 -0.5 0.5" diaginertia="3.2e-07 2.6e-07 2.6e-07"/>
+                                                    <joint name="ind_joint3" type="hinge" armature="0.00093" pos="0 0 0" axis="0 -1 0" range="-0.349066 0.349066" user="1103"/>
+                                                    <geom class="robot0:D_Visual" name="robot0:V_ffknuckle" mesh="robot0:knuckle" pos="0 0 0.0005" material="black"/>
+                                                    <body gravcomp="1" name="robot0:ffproximal" pos="0 0 0">
+                                                        <inertial mass="0.03" pos="0 0 0.0225" quat="1 0 0 1" diaginertia="1e-05 9.8e-06 1.8e-06"/>
+                                                        <joint name="ind_joint2" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="-0.261799 1.5708" user="1102"/>
+                                                        <geom class="robot0:D_Visual" name="robot0:V_ffproximal" mesh="robot0:F3" material="black"/>
+                                                        <geom class="robot0:DC_Hand" name="robot0:C_ffproximal" type="capsule" size="0.009 0.02" pos="0 0 0.025"/>
+
+                                                        <body gravcomp="1" name="robot0:ffmiddle" pos="0 0 0.045">
+                                                            <inertial mass="0.017" pos="0 0 0.0125" quat="1 0 0 1" diaginertia="2.7e-06 2.6e-06 8.7e-07"/>
+                                                            <joint name="ind_joint1" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="0 1.5708" user="1101"/>
+                                                            <geom class="robot0:D_Visual" name="robot0:V_ffmiddle" mesh="robot0:F2" material="black"/>
+                                                            <geom class="robot0:DC_Hand" name="robot0:C_ffmiddle" type="capsule" size="0.009 0.0125" pos="0 0 0.0125"/>
+                                                            <body gravcomp="1" name="robot0:ffdistal" pos="0 0 0.025">
+                                                                <site name="ff_tip" pos="0 0 0.019" group="4"/>
+                                                                <inertial mass="0.013" pos="0 0 0.0130769" quat="1 0 0 1" diaginertia="1.28092e-06 1.12092e-06 5.3e-07"/>
+                                                                <joint name="ind_joint0" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="0 1.5708" user="1100"/>
+                                                                <geom class="robot0:D_Visual" name="robot0:V_ffdistal" mesh="robot0:F1" material="black"/>
+                                                                <geom class="robot0:DC_Hand" name="robot0:C_ffdistal" type="mesh" mesh="robot0:F1" condim="4" rgba="0.4 0.5 0.6 0.2"/>
+                                                                <site name="robot0:S_fftip" pos="0 0 0.019" group="3"/>
+                                                            </body>
+                                                        </body>
+                                                    </body>
+                                                </body>
+
+                                                <body gravcomp="1" name="robot0:mfknuckle" pos="0.011 0 0.099">
+                                                    <inertial mass="0.008" pos="0 0 0" quat="0.5 0.5 -0.5 0.5" diaginertia="3.2e-07 2.6e-07 2.6e-07"/>
+                                                    <joint name="mid_joint3" type="hinge" armature="0.00093" pos="0 0 0" axis="0 -1 0" range="-0.349066 0.349066" user="1107"/>
+                                                    <geom class="robot0:D_Visual" name="robot0:V_mfknuckle" mesh="robot0:knuckle" pos="0 0 0.0005" material="black"/>
+                                                    <body gravcomp="1" name="robot0:mfproximal" pos="0 0 0">
+                                                        <inertial mass="0.03" pos="0 0 0.0225" quat="1 0 0 1" diaginertia="1e-05 9.8e-06 1.8e-06"/>
+                                                        <joint name="mid_joint2" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="-0.261799 1.5708" user="1106"/>
+                                                        <geom class="robot0:D_Visual" name="robot0:V_mfproximal" mesh="robot0:F3" material="black"/>
+                                                        <geom class="robot0:DC_Hand" name="robot0:C_mfproximal" type="capsule" size="0.009 0.02" pos="0 0 0.025"/>
+                                                        <body gravcomp="1" name="robot0:mfmiddle" pos="0 0 0.045">
+                                                            <inertial mass="0.017" pos="0 0 0.0125" quat="1 0 0 1" diaginertia="2.7e-06 2.6e-06 8.7e-07"/>
+                                                            <joint name="mid_joint1" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="0 1.5708" user="1105"/>
+                                                            <geom class="robot0:D_Visual" name="robot0:V_mfmiddle" mesh="robot0:F2" material="black"/>
+                                                            <geom class="robot0:DC_Hand" name="robot0:C_mfmiddle" type="capsule" size="0.009 0.0125" pos="0 0 0.0125"/>
+                                                            <body gravcomp="1" name="robot0:mfdistal" pos="0 0 0.025">
+                                                                <site name="mf_tip" pos="0 0 0.019" group="4"/>
+                                                                <inertial mass="0.013" pos="0 0 0.0130769" quat="1 0 0 1" diaginertia="1.28092e-06 1.12092e-06 5.3e-07"/>
+                                                                <joint name="mid_joint0" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="0 1.5708" user="1104"/>
+                                                                <geom class="robot0:D_Visual" name="robot0:V_mfdistal" mesh="robot0:F1" material="black"/>
+                                                                <geom class="robot0:DC_Hand" name="robot0:C_mfdistal" type="mesh" mesh="robot0:F1" condim="4" rgba="0.4 0.5 0.6 0.2"/>
+                                                            </body>
+                                                        </body>
+                                                    </body>
+                                                </body>
+
+                                                <body gravcomp="1" name="robot0:rfknuckle" pos="-0.011 0 0.095">
+                                                    <inertial mass="0.008" pos="0 0 0" quat="0.5 0.5 -0.5 0.5" diaginertia="3.2e-07 2.6e-07 2.6e-07"/>
+                                                    <joint name="rin_joint3" type="hinge" armature="0.00093" pos="0 0 0" axis="0 1 0" range="-0.349066 0.349066" user="1111"/>
+                                                    <geom class="robot0:D_Visual" name="robot0:V_rfknuckle" mesh="robot0:knuckle" pos="0 0 0.0005" material="black"/>
+                                                    <body gravcomp="1" name="robot0:rfproximal" pos="0 0 0">
+                                                        <inertial mass="0.03" pos="0 0 0.0225" quat="1 0 0 1" diaginertia="1e-05 9.8e-06 1.8e-06"/>
+                                                        <joint name="rin_joint2" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="-0.261799 1.5708" user="1110"/>
+                                                        <geom class="robot0:D_Visual" name="robot0:V_rfproximal" mesh="robot0:F3" material="black"/>
+                                                        <geom class="robot0:DC_Hand" name="robot0:C_rfproximal" type="capsule" size="0.009 0.02" pos="0 0 0.025"/>
+                                                        <body gravcomp="1" name="robot0:rfmiddle" pos="0 0 0.045">
+                                                            <inertial mass="0.017" pos="0 0 0.0125" quat="1 0 0 1" diaginertia="2.7e-06 2.6e-06 8.7e-07"/>
+                                                            <joint name="rin_joint1" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="0 1.5708" user="1109"/>
+                                                            <geom class="robot0:D_Visual" name="robot0:V_rfmiddle" mesh="robot0:F2" material="black"/>
+                                                            <geom class="robot0:DC_Hand" name="robot0:C_rfmiddle" type="capsule" size="0.009 0.0125" pos="0 0 0.0125"/>
+                                                            <body gravcomp="1" name="robot0:rfdistal" pos="0 0 0.025">
+                                                                <site name="rf_tip" pos="0 0 0.019" group="4"/>
+                                                                <inertial mass="0.013" pos="0 0 0.0130769" quat="1 0 0 1" diaginertia="1.28092e-06 1.12092e-06 5.3e-07"/>
+                                                                <joint name="rin_joint0" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="0 1.5708" user="1108"/>
+                                                                <geom class="robot0:D_Visual" name="robot0:V_rfdistal" mesh="robot0:F1" material="black"/>
+                                                                <geom class="robot0:DC_Hand" name="robot0:C_rfdistal" type="mesh" mesh="robot0:F1" condim="4" rgba="0.4 0.5 0.6 0.2"/>
+                                                            </body>
+                                                        </body>
+                                                    </body>
+                                                </body>
+
+                                                <body gravcomp="1" name="robot0:lfmetacarpal" pos="-0.033 0 0.02071">
+                                                    <inertial mass="0.03" pos="0 0 0.04" quat="1 0 0 1" diaginertia="1.638e-05 1.45e-05 4.272e-06"/>
+                                                    <joint name="lit_joint4" type="hinge" armature="0.00093" pos="0 0 0" axis="0.573576 0 0.819152" range="0 0.785398" user="1116"/>
+                                                    <geom class="robot0:D_Visual" name="robot0:V_lfmetacarpal" mesh="robot0:lfmetacarpal" material="black"/>
+                                                    <geom class="robot0:DC_Hand" name="robot0:C_lfmetacarpal" type="box" size="0.011 0.012 0.025" pos="0.002 0 0.033" rgba="0.4 0.5 0.6 0.2"/>
+                                                    <body gravcomp="1" name="robot0:lfknuckle" pos="0 0 0.06579">
+                                                        <inertial mass="0.008" pos="0 0 0" quat="0.5 0.5 -0.5 0.5" diaginertia="3.2e-07 2.6e-07 2.6e-07"/>
+                                                        <joint name="lit_joint3" type="hinge" armature="0.00093" pos="0 0 0" axis="0 1 0" range="-0.349066 0.349066" user="1115"/>
+                                                        <geom class="robot0:D_Visual" name="robot0:V_lfknuckle" mesh="robot0:knuckle" pos="0 0 0.0005" material="black"/>
+                                                        <body gravcomp="1" name="robot0:lfproximal" pos="0 0 0">
+                                                            <inertial mass="0.03" pos="0 0 0.0225" quat="1 0 0 1" diaginertia="1e-05 9.8e-06 1.8e-06"/>
+                                                            <joint name="lit_joint2" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="-0.261799 1.5708" user="1114"/>
+                                                            <geom class="robot0:D_Visual" name="robot0:V_lfproximal" mesh="robot0:F3" material="black"/>
+                                                            <geom class="robot0:DC_Hand" name="robot0:C_lfproximal" type="capsule" size="0.009 0.02" pos="0 0 0.025"/>
+                                                            <body gravcomp="1" name="robot0:lfmiddle" pos="0 0 0.045">
+                                                                <inertial mass="0.017" pos="0 0 0.0125" quat="1 0 0 1" diaginertia="2.7e-06 2.6e-06 8.7e-07"/>
+                                                                <joint name="lit_joint1" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="0 1.5708" user="1113"/>
+                                                                <geom class="robot0:D_Visual" name="robot0:V_lfmiddle" mesh="robot0:F2" material="black"/>
+                                                                <geom class="robot0:DC_Hand" name="robot0:C_lfmiddle" type="capsule" size="0.009 0.0125" pos="0 0 0.0125"/>
+                                                                <body gravcomp="1" name="robot0:lfdistal" pos="0 0 0.025">
+                                                                    <site name="lf_tip" pos="0 0 0.019" group="4"/>
+                                                                    <inertial mass="0.013" pos="0 0 0.0130769" quat="1 0 0 1" diaginertia="1.28092e-06 1.12092e-06 5.3e-07"/>
+                                                                    <joint name="lit_joint0" type="hinge" armature="0.00093" pos="0 0 0" axis="1 0 0" range="0 1.5708" user="1112"/>
+                                                                    <geom class="robot0:D_Visual" name="robot0:V_lfdistal" mesh="robot0:F1" material="black"/>
+                                                                    <geom class="robot0:DC_Hand" name="robot0:C_lfdistal" type="mesh" mesh="robot0:F1" condim="4" rgba="0.4 0.5 0.6 0.2"/>
+                                                                </body>
+                                                            </body>
+                                                        </body>
+                                                    </body>
+                                                </body>
+
+                                                <body gravcomp="1" name="robot0:thbase" pos="0.034 -0.00858 0.029" quat="0.92388 0 0.382683 0">
+                                                    <inertial mass="0.01" pos="0 0 0" diaginertia="1.6e-07 1.6e-07 1.6e-07"/>
+                                                    <joint name="thu_joint4" type="hinge" pos="0 0 0" axis="0 0 -1" range="-1.0472 1.0472" armature="0.00676" damping="0.5" frictionloss="0.01" margin="0.01" user="1121"/>
+                                                    <geom name="robot0:V_thbase" type="box" group="1" pos="0 0 0" size="0.001 0.001 0.001"/>
+                                                    <body gravcomp="1" name="robot0:thproximal" pos="0 0 0">
+                                                        <inertial mass="0.04" pos="0 0 0.019" diaginertia="1.36e-05 1.36e-05 3.13e-06"/>
+                                                        <joint name="thu_joint3" type="hinge" pos="0 0 0" axis="1 0 0" range="0 1.22173" armature="0.00676" damping="0.5" frictionloss="0.01" margin="0.01" user="1120"/>
+                                                        <geom class="robot0:D_Visual" name="robot0:V_thproximal" mesh="robot0:TH3_z" material="black"/>
+                                                        <geom class="robot0:DC_Hand" name="robot0:C_thproximal" type="capsule" pos="0 0 0.019" size="0.013 0.019" rgba="0.4 0.5 0.6 0.1"/>
+                                                        <body gravcomp="1" name="robot0:thhub" pos="0 0 0.038">
+                                                            <inertial mass="0.005" pos="0 0 0" diaginertia="1e-06 1e-06 3e-07"/>
+                                                            <joint name="thu_joint2" type="hinge" pos="0 0 0" axis="1 0 0" range="-0.20944 0.20944" armature="0.00093" user="1119"/>
+                                                            <geom name="robot0:V_thhub" type="box" group="1" pos="0 0 0" size="0.001 0.001 0.001"/>
+                                                            <body gravcomp="1" name="robot0:thmiddle" pos="0 0 0">
+                                                                <inertial mass="0.02" pos="0 0 0.016" diaginertia="5.1e-06 5.1e-06 1.21e-06"/>
+                                                                <joint name="thu_joint1" type="hinge" pos="0 0 0" axis="0 -1 0" range="-0.698132 0.698132" armature="0.00093" user="1118"/>
+                                                                <geom class="robot0:D_Visual" name="robot0:V_thmiddle" mesh="robot0:TH2_z" material="black"/>
+                                                                <geom class="robot0:DC_Hand" name="robot0:C_thmiddle" type="capsule" pos="0 0 0.016" size="0.011 0.016"/>
+                                                                <body gravcomp="1" name="robot0:thdistal" pos="0 0 0.032" quat="1 0 0 -1">
+                                                                    <site name="th_tip" pos="0 0 0.02" group="4"/>
+                                                                    <inertial mass="0.017" pos="0 0 0.0145588" quat="1 0 0 1" diaginertia="2.37794e-06 2.27794e-06 1e-06"/>
+                                                                    <joint name="thu_joint0" type="hinge" pos="0 0 0" axis="1 0 0" range="-0.261799 1.5708" armature="0.00093" user="1117"/>
+                                                                    <geom class="robot0:D_Visual" name="robot0:V_thdistal" mesh="robot0:TH1_z" material="black"/>
+                                                                    <geom class="robot0:DC_Hand" name="robot0:C_thdistal" type="mesh" mesh="robot0:TH1_z" condim="4" rgba="0.4 0.5 0.6 0.2"/>
+                                                                </body>
+                                                            </body>
+                                                        </body>
+                                                    </body>
+                                                </body>
+                                            </body>
+                                        </body>
+                                    </body>
+                                </body>
+                            </body>
+                        </body>
+                    </body>
+                </body>
+            </body>
+
+  </worldbody>
+</mujoco>

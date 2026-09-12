@@ -1,0 +1,23 @@
+<mujoco>
+  <!-- The LEAP hand reorientation cube (mesh and textures from leap_hand/xmls), scaled to 6 cm. -->
+  <default>
+    <default class="cube">
+      <geom friction=".3 0.05" contype="1" conaffinity="1" condim="3"/>
+    </default>
+  </default>
+
+  <asset>
+    <texture name="dexcube" type="2d" file="dex_cube.png"/>
+    <material name="dexcube" texture="dexcube"/>
+    <mesh name="cube_mesh" file="dex_cube.obj" scale="0.03 0.03 0.03"/>
+  </asset>
+
+  <worldbody>
+    <body name="cube" pos="1.08 0 1.4" quat="1 0 0 0" childclass="cube">
+      <freejoint name="cube_freejoint"/>
+      <geom type="mesh" mesh="cube_mesh" material="dexcube" contype="0" conaffinity="0" density="0" group="2"/>
+      <geom name="cube" type="box" size=".03 .03 .03" mass=".1" group="3"/>
+      <site name="cube_center" pos="0 0 0" group="4"/>
+    </body>
+  </worldbody>
+</mujoco>

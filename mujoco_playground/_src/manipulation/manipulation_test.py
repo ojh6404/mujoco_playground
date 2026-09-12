@@ -20,6 +20,7 @@ import jax
 import jax.numpy as jp
 
 from mujoco_playground._src import manipulation
+from mujoco_playground._src.manipulation.a0b_shadow_hand import base as a0bsrh_base
 
 
 class TestSuite(parameterized.TestCase):
@@ -30,6 +31,8 @@ class TestSuite(parameterized.TestCase):
       for env_name in manipulation.ALL_ENVS
   )
   def test_can_create_all_environments(self, env_name: str) -> None:
+    if env_name.startswith("A0bShadow") and not a0bsrh_base.MODEL_PATH.exists():
+      self.skipTest("The a0bsrh_model package is not checked out.")
     config = manipulation.get_default_config(env_name)
     overrides = {"impl": "jax"} if "impl" in config else {}
     env = manipulation.load(env_name, config_overrides=overrides)

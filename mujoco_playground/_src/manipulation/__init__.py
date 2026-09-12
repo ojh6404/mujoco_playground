@@ -13,6 +13,7 @@
 # limitations under the License.
 
 """Module for manipulation environments."""
+
 from typing import Any, Callable, Dict, Optional, Tuple, Type, Union
 
 import jax
@@ -29,6 +30,7 @@ from mujoco_playground._src.manipulation.franka_emika_panda_robotiq import push_
 from mujoco_playground._src.manipulation.leap_hand import reorient as leap_cube_reorient
 from mujoco_playground._src.manipulation.leap_hand import rotate_z as leap_rotate_z
 from mujoco_playground._src.manipulation.aero_hand import rotate_z as aero_hand_rotate_z
+from mujoco_playground._src.manipulation.a0b_shadow_hand import reorient as a0bsrh_reorient
 
 _envs = {
     "AlohaHandOver": aloha_handover.HandOver,
@@ -41,6 +43,7 @@ _envs = {
     "LeapCubeReorient": leap_cube_reorient.CubeReorient,
     "LeapCubeRotateZAxis": leap_rotate_z.CubeRotateZAxis,
     "AeroCubeRotateZAxis": aero_hand_rotate_z.CubeRotateZAxis,
+    "A0bShadowCubeReorient": a0bsrh_reorient.CubeReorient,
 }
 
 _cfgs = {
@@ -54,12 +57,14 @@ _cfgs = {
     "LeapCubeReorient": leap_cube_reorient.default_config,
     "LeapCubeRotateZAxis": leap_rotate_z.default_config,
     "AeroCubeRotateZAxis": aero_hand_rotate_z.default_config,
+    "A0bShadowCubeReorient": a0bsrh_reorient.default_config,
 }
 
 _randomizer = {
     "LeapCubeRotateZAxis": leap_rotate_z.domain_randomize,
     "LeapCubeReorient": leap_cube_reorient.domain_randomize,
     "AeroCubeRotateZAxis": aero_hand_rotate_z.domain_randomize,
+    "A0bShadowCubeReorient": a0bsrh_reorient.domain_randomize,
 }
 
 
