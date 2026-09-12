@@ -93,3 +93,30 @@ in the same way. The simulated YAM is a much softer position servo (3.5×
 lower kp) with a slow, weak gripper: with kp 100 N/m the fingers take about
 0.3 s to close and hold a 4 cm cube with about 1.5 N per pad, against 8 N for
 the reBot.
+
+## Results: YAM vs reBot on the same tasks
+
+Both arms trained with the same code and hyperparameters on an RTX 4090
+(`impl="warp"`); the reBot numbers were re-run for the state tasks and taken
+from the reBot README for the stacking and vision runs. Pick tasks: 24.6M
+steps, 2048 envs, 1024 deterministic evaluation episodes. Stacking: 65.5M
+steps, 256 episodes. Vision: RGB 64×64 from the front camera, 1024 envs,
+128 evaluation episodes at every evaluation.
+
+| Task | | YAM | reBot B601-DM |
+| --- | --- | --- | --- |
+| `PickCube` | success (box within 2 cm) / median final distance / median rotation error / train time | 99.9% / 0.20 cm / 3.6° / 81 s | 100% / 0.15 cm / 0.3° / 71 s |
+| `PickCubeOrientation` | same | 99.8% / 0.35 cm / 5.5° / 81 s | 100% / 0.26 cm / 1.3° / 72 s |
+| `StackCube` | stacked and released at the end / red cube moved (median) / time to first success (median) / train time | 100% / 0.03 cm / 0.60 s / 222 s | 99.6% / 0.04 cm / – / about 6 min |
+| `PickCubeCartesian` (RGB, 10M) | success at 2.5 / 5 / 7.5 / 10M steps, final average episode length | 100 / 99 / 99 / 100%, 40 steps | 100 / 100 / 100 / 100%, 31 steps |
+| `StackCubeCartesian` (RGB, 20M) | success at 2 / 4 / 10 / 20M steps, final average episode length | 45 / 97 / 98 / 98%, 65 steps | 90 / 95 / 97 / 98%, 56 steps |
+
+The two arms end up at the same success rates on every task. The differences
+follow from the grippers: the YAM holds the box with a tilt (rotation error
+3.6° against 0.3° without an orientation target, 5.5° against 1.3° with one),
+because its fingertip strips grip 44 mm off the wrist axis and the inclined
+strips let the cube pitch; and its slow, weak gripper (about 0.3 s to close)
+makes the pixel policies need 8–9 more control steps per episode and slows
+the start of the stacking run (45% against 90% success at 2M steps) before it
+catches up. The YAM trains about 15% slower per step with the larger contact
+buffers. Recordings of the trained policies are in `logs/yam_compare/*/`.
