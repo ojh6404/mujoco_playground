@@ -15,10 +15,11 @@
 """Pick up a 5 cm cube with the reBot B601-DM in its calibrated real setup.
 
 Made for sim-to-real with rebot_serl: the scene, the camera (the D435i on the
-robot's left) and the reset pose follow its calibration, the gripper opens
-57 mm like the real one, control runs at 10 Hz with 1 cm Cartesian steps and
-0.1 rad yaw steps (its compliance clips), and the cube colour, table shade,
-camera pose and image brightness are randomized every episode.
+robot's left) and the reset pose follow its calibration, the arm follows the
+gains and target filter of its controller, control runs at 10 Hz with 1 cm
+Cartesian steps, 0.1 rad yaw steps (its compliance clips) and a continuous
+gripper opening, and the cube colour, table shade, camera pose and image
+appearance are randomized every episode.
 """
 
 from typing import Any, Dict, Optional, Union
@@ -570,10 +571,13 @@ class RebotDmPickCubeReal(pick_cartesian.RebotDmPickCubeCartesian):
     new_tip_pos = jp.where(no_soln, current_tip_pos, new_tip_pos)
     new_yaw = jp.where(no_soln, current_yaw, new_yaw)
 
-    # Discrete gripper action where a < 0 := close.
+    # Continuous opening target: -1 closed, +1 fully open, reached at the
+    # finger speed. (With a discrete open/close threshold at 0 the trained
+    # policy dithered around it and dropped grasped cubes.)
     finger_step = self._config.gripper_speed * self.dt
-    finger = current_ctrl[6] + jp.where(
-        action[4] < 0, -finger_step, finger_step
+    opening = 0.5 * (1.0 + action[4]) * self._config.gripper_travel
+    finger = jp.clip(
+        opening, current_ctrl[6] - finger_step, current_ctrl[6] + finger_step
     )
     new_ctrl = current_ctrl.at[:6].set(arm_q).at[6].set(finger)
     return new_ctrl, new_tip_pos, new_yaw, no_soln
